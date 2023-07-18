@@ -1,0 +1,26 @@
+{{- range .Values.clusters }}
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: argocd
+  name: {{ .name }}
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+    {{- range $key, $value := .labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+type: Opaque
+stringData:
+  name: {{ .name }}
+  namespace: argocd
+  server: "{{ .server }}"
+  config: |
+    {
+      "bearerToken": "{{ .bearerToken }}",
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "{{ .caData }}"
+      }
+    }
+---
+{{- end }}

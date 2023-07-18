@@ -1,0 +1,72 @@
+{{- range $index, $applicationSet := .Values.applicationsets }}
+{{- range $i, $environment := $applicationSet.environments }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ $applicationSet.appName }}-{{ $environment.env }}
+  namespace: argocd
+spec:
+  clusterResourceBlacklist:
+  - group: ""
+    kind: ""
+  - group: ""
+    kind: ""
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+---
+{{- end }}
+{{- end }}
+
+{{- range $index, $appset := .Values.applicationsets }}
+{{- range $i, $environment := $appset.environments }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ $appset.appName }}-{{ $environment.env }}
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster                  
+            env: '{{ $environment.env }}'
+            {{ $appset.appName }}: 'enabled'                  
+  template:    
+    metadata:
+      name: '{{ $appset.appName }}-{{`{{.name}}`}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io      
+    spec:
+      project: {{ $appset.appName }}-{{ $environment.env }}
+      source:
+        repoURL: {{ $appset.repoURL }}
+        targetRevision: {{ $environment.version }}
+        chart: {{ $appset.chart }}
+      destination:
+        server: '{{`{{.server}}`}}'
+        namespace: {{ $appset.appName }}
+      syncPolicy:  
+        automated:
+          prune: true
+        syncOptions:
+        - CreateNamespace=true
+      {{- with $appset.ignoreDifferences }}
+      ignoreDifferences:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}        
+---
+{{- end }}
+{{- end }}

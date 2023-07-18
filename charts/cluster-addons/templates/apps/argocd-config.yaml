@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-config
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  project: infra
+  source:
+    path: charts/argocd-config
+    repoURL: https://github.com/MoranWeissman/msd-meetup-argocd-2023.git
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+      - ../../values/global.yaml
+  syncPolicy:
+    automated: {}
