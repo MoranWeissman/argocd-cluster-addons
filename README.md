@@ -1,61 +1,70 @@
 # MSD Meetup ArgoCD 2023
 
-This repository contains the configurations and templates for deploying cluster addons with ArgoCD ApplicationSets.
+This project contains the Helm charts necessary for configuring ArgoCD, managing remote clusters, and deploying add-ons across environments using ArgoCD's app-of-apps pattern. All applications, clusters, and their respective configurations are defined in the `values` directory. The project also utilizes ApplicationSet and AppProject CRDs for creating a dynamic application deployment pipeline.
 
 ## Directory Structure
 
 ```text
 msd-meetup-argocd-2023
-├── argocd
-│   ├── apps
-│   │   └── argocd-config.yaml
-│   └── argocd-config
-│       ├── argocd-repo-server.yaml
-│       └── argocd-server.yaml
-├── cluster-addons
-│   ├── appset-template
+├── README.md
+├── charts
+│   ├── argocd-config
+│   │   ├── Chart.yaml
 │   │   ├── templates
-│   │   │   └── appset-template.yaml
-│   │   ├── chart.yaml
+│   │   │   ├── argocd-repo-server.yaml
+│   │   │   └── argocd-server.yaml
 │   │   └── values.yaml
-│   ├── templates
-│   │   ├── app-template.yaml
-│   │   └── cluster-addons-root.yaml
-│   ├── values
-│   │   ├── cluster-addons-appsets
-│   │   │   ├── msd-chicken.yaml
-│   │   │   └── msd-cow.yaml
-│   │   └── cluster-addons-apps.yaml
-│   ├── chart.yaml
-│   └── values.yaml
-└── remote-clusters
-    ├── yamls
-    └── remote-clusters.yaml
+│   ├── cluster-addons
+│   │   ├── Chart.yaml
+│   │   ├── templates
+│   │   │   ├── addons-app.yaml
+│   │   │   ├── apps
+│   │   │   │   ├── argocd-config.yaml
+│   │   │   │   └── remote-clusters.yaml
+│   │   │   └── appsets
+│   │   │       └── applicationset.yaml
+│   │   └── values.yaml
+│   └── clusters
+│       ├── Chart.yaml
+│       ├── templates
+│       │   └── remote-cluster-template.yaml
+│       └── values.yaml
+└── values
+    ├── addons-list.yaml
+    ├── clusters.yaml
+    └── global.yaml
 ```
-# argocd
+- The `charts` directory contains the Helm charts for the ArgoCD configuration (`argocd-config`), secrets for ArgoCD to connect to remote clusters (`clusters`), and the root app (`cluster-addons`) which manages these two applications.
 
-The `argocd` directory contains configurations for ArgoCD, including `argocd-config.yaml` for application configuration and `argocd-repo-server.yaml` and `argocd-server.yaml` for ArgoCD server configuration.
+- The `values` directory contains the configuration for the deployed applications (`addons-list.yaml`), the configuration of the clusters (`clusters.yaml`), and global configuration options (`global.yaml`).
 
-# cluster-addons
+## Technologies Used
+- ArgoCD
+- Helm
+- Kubernetes
 
-The `cluster-addons` directory contains the templates and values files for the addons.
+## Usage Instructions
+Clone the repository and configure the Helm values to fit your needs. Apply the Helm charts in the following order:
 
-- The `appset-template` subdirectory contains Helm chart for managing cluster addons application sets and projects.
-- The `templates` subdirectory contains application templates and root configuration.
-- The `values` subdirectory contains values for each addon. `cluster-addons-appsets` further categorizes values for each addon into `msd-chicken.yaml` and `msd-cow.yaml`.
+1. ArgoCD Configuration
+2. Clusters
+3. Cluster-Addons
 
-# remote-clusters
+## Setup Instructions
+You need to have ArgoCD, Helm, and Kubernetes installed and configured on your machine.
+Don't forget to connect your ArgoCD to your repository that will hold this code.
 
-The `remote-clusters` directory contains configuration for remote clusters in `remote-clusters.yaml`. The `yamls` subdirectory is currently empty but can be used for additional configurations.
+Clone the repository and install the charts as follows:
 
-# Naming Conventions
-
-The naming convention is `verb-noun.yaml`, which helps describe the purpose of each file. The names are descriptive and adhere to the following examples:
-
-- `argocd-config.yaml`: Configuration for ArgoCD.
-- `app-template.yaml`: Template for an application.
-- `cluster-addons-root.yaml`: Root configuration for cluster addons.
+```bash
+git clone https://github.com/moranweissman/msd-meetup-argocd-2023.git
+cd msd-meetup-argocd-2023
+helm template charts/cluster-addons | kubectl apply -f - -n argocd
+```
 
 # Contributing
 
-Please follow the existing structure and naming conventions when adding new files or making changes to existing ones. If you have suggestions for improvements or changes, please open an issue for discussion.
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+License
+This project is licensed under the MIT License - see the LICENSE.md file for details.
