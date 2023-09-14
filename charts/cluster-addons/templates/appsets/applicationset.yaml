@@ -5,7 +5,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: {{ $applicationSet.appName }}-{{ $environment.env }}
-  namespace: argocd
+  namespace: argo
 spec:
   clusterResourceBlacklist:
   - group: ""
@@ -34,7 +34,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: {{ $appset.appName }}-{{ $environment.env }}
-  namespace: argocd
+  namespace: argo
 spec:
   goTemplate: true
   generators:
@@ -43,7 +43,6 @@ spec:
           matchLabels:
             argocd.argoproj.io/secret-type: cluster                  
             env: '{{ $environment.env }}'
-            {{ $appset.appName }}: 'enabled'                  
   template:    
     metadata:
       name: '{{ $appset.appName }}-{{`{{.name}}`}}'
@@ -55,9 +54,14 @@ spec:
         repoURL: {{ $appset.repoURL }}
         targetRevision: {{ $environment.version }}
         chart: {{ $appset.chart }}
+        {{- with $environment.valuesObject }}
+        helm:
+          valuesObject:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
       destination:
         server: '{{`{{.server}}`}}'
-        namespace: {{ $appset.appName }}
+        namespace: {{ $appset.namespace }}
       syncPolicy:  
         automated:
           prune: true
@@ -70,3 +74,4 @@ spec:
 ---
 {{- end }}
 {{- end }}
+

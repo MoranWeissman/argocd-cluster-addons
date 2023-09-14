@@ -1,0 +1,53 @@
+{{- range .Values.clusters }}
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ .name }}
+  namespace: argo
+spec:
+  secretStoreRef:
+    name: global-secrets
+    kind: ClusterSecretStore
+  refreshInterval: "8760h"
+  target:
+    name: {{ .name }}
+    creationPolicy: 'Owner'
+    template:
+      type: Opaque
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: cluster
+          {{- range $key, $value := .labels }}
+          {{ $key }}: {{ $value }}
+          {{- end }}
+      data:
+        name: '{{"{{ .clusterName }}"}}'
+        server: '{{"{{ .host }}"}}'
+        config: |
+          {
+            "execProviderConfig": {
+              "command": "argocd-k8s-auth",
+              "args": ["gcp"],
+              "apiVersion": "client.authentication.k8s.io/v1beta1"
+            },
+            "tlsClientConfig": {
+              "insecure": false,
+              "caData": "{{"{{ .caData }}"}}"
+            }
+          }
+  data:
+    - secretKey: clusterName
+      remoteRef:
+        key: {{ .name }}
+        property: clusterName
+    - secretKey: host
+      remoteRef:
+        key: {{ .name }}
+        property: host
+    - secretKey: caData
+      remoteRef:
+        key: {{ .name }}
+        property: caData
+        decodingStrategy: None
+---
+{{- end }}

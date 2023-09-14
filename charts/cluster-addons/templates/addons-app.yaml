@@ -6,18 +6,18 @@ metadata:
   labels:
     argocd.argoproj.io/instance: cluster-addons-root
   name: cluster-addons-root
-  namespace: argocd
+  namespace: argo
 spec:
   destination:
-    namespace: argocd
+    namespace: argo
     server: 'https://kubernetes.default.svc'
   project: default
   source:
     helm:
       valueFiles:
         - "../../values/addons-list.yaml"
-    path: charts/cluster-addons
-    repoURL: 'https://github.com/MoranWeissman/msd-meetup-argocd-2023.git'
+    path: infra/kubernetes/helm/argocd/charts/cluster-addons
+    repoURL: 'https://github.com/sqream/sqream-environments.git'
     targetRevision: HEAD
   syncPolicy:
     automated:

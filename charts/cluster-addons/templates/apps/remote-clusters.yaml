@@ -2,21 +2,21 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: clusters
-  namespace: argocd
+  namespace: argo
   finalizers:
   - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
-  project: infra
+    namespace: argo
+  project: default
   source:
-    path: charts/clusters
-    repoURL: https://github.com/MoranWeissman/msd-meetup-argocd-2023.git
+    path: infra/kubernetes/helm/argocd/charts/clusters
+    repoURL: https://github.com/sqream/sqream-environments.git
     targetRevision: HEAD
     helm:
       valueFiles:
-      - ../../values/clusters.yaml 
+      - ../../values/clusters.yaml
   syncPolicy:
     automated:
       prune: true

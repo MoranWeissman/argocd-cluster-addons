@@ -1,4 +1,9 @@
 apiVersion: v2
 name: remote-clusters
-description: A Helm chart for Kubernetes
+description: Helm to manage multiple clusters of Argo, clusters will be pulled from values in GCP secret manager.
 version: 0.1.0
+maintainers:
+  - name: moran.weissman
+    email: moran.weissman@merck.com
+  - name: MaorPaz
+    email: maor5656@gmail.com
