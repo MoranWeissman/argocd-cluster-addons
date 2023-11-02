@@ -29,12 +29,10 @@ Before diving into the technical details of managing cluster add-ons with ArgoCD
   - All changes to the cluster configurations are to be made through pull requests. Direct commits to the main branch are not allowed to ensure a reviewable and auditable trail of modifications.
 
 - **Review and Approval**:
-  - Pull requests must be reviewed by at least two DevOps engineers, providing a dual layer of scrutiny to uphold the quality and security of changes.
-  - Inclusion of a team or domain lead in the review process is required to align changes with overarching organizational goals and policies.
+  - Pull requests must be reviewed providing a layer of scrutiny to uphold the quality and security of changes.
 
 - **Merging Process**:
   - Merging of pull requests is contingent upon successful reviews and approvals from the required personnel.
-  - Pull requests must also pass all automated checks and tests before they can be merged.
 
 This workflow is integral to our operations and ensures that all changes are implemented responsibly and in accordance with established protocols.
 
