@@ -61,8 +61,6 @@ Before attaching a cluster to ArgoCD:
 - Create a corresponding secret in AWS Secret Manager with the cluster's name.
 - Include essential information: `clusterName`, `host`, `caData`, and `accountId`.
 
-_Note to self: Ask the infra team to automate this with Terraform if possible._
-
 After creating the AWS secret:
 
 - Update `clusters.yaml` with the new cluster's information.
