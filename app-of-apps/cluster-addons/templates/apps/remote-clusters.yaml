@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: argocd-config
+  name: clusters
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
@@ -11,11 +11,12 @@ spec:
     namespace: argocd
   project: infra
   source:
-    path: charts/argocd-config
-    repoURL: https://github.com/MoranWeissman/msd-meetup-argocd-2023.git
+    path: charts/clusters
+    repoURL: git@github.com:MoranWeissman/msd-meetup-argocd-2023.git
     targetRevision: HEAD
     helm:
       valueFiles:
-      - ../../values/global.yaml
+      - ../../values/clusters.yaml 
   syncPolicy:
-    automated: {}
+    automated:
+      prune: true

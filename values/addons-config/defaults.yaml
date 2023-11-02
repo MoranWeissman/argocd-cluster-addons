@@ -1,0 +1,23 @@
+# ==========================================================
+# Default configurations for all addons.
+# These values are applied to all clusters unless overridden 
+# in the clusters section below.
+# ==========================================================
+addonsConfig:
+  default:
+    
+    # ---- Datadog Configuration ----
+    datadog:
+      datadog:
+        logLevel: INFO
+        logs:
+          enabled: 'true'
+          containerCollectAll: 'true'
+          autoMultiLineDetection: 'true'
+        containerExcludeLogs: 'kube_namespace:.*'
+    
+    # ---- KEDA Configuration ----
+    keda:
+      serviceAccount:
+        name: keda-operator-sa
+        annotations: {}

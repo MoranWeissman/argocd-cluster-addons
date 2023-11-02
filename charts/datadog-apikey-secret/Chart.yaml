@@ -1,0 +1,8 @@
+apiVersion: v2
+name: datadog-apikey-secret
+description: A Helm chart for managing datadog apikeys secrets
+type: application
+version: 1.0.0
+maintainers:
+  - name: moran.weissman
+    email: moran.weissman@merck.com

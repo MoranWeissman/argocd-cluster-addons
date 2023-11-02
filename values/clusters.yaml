@@ -1,45 +1,7 @@
 clusters:
-  # # devops-demo1
-  # - name: devops-demo1-eks
-  #   server:  ""
-  #   # The following keys should be encrypted in a real working environment (sealed-secrets, vault plugin, etc.)
-  #   bearerToken: ""
-  #   caData: ""
-  #   labels:
-  #     env: dev
-      # datadog: enabled
-      # keda: enabled
-      # crossplane: enabled       
-
-  # # devops-demo2
-  # - name: devops-demo2-eks
-  #   server:  ""
-  #   bearerToken: ""
-  #   caData: ""
-  #   labels:
-  #     env: dev
-  #     # datadog: enabled
-  #     # keda: enabled
-  #     # crossplane: enabled            
-
-  # # devops-demo3
-  # - name: devops-demo3-eks
-  #   server:  ""
-  #   bearerToken: ""
-  #   caData: ""
-  #   labels:
-  #     env: dev
-  #     # datadog: enabled
-  #     # keda: enabled
-  #     # crossplane: enabled            
-
-  # # devops-demo4
-  # - name: devops-demo4-eks
-  #   server:  ""
-  #   bearerToken: ""
-  #   caData: ""
-  #   labels:
-  #     env: prod
-  #     # datadog: enabled
-  #     # keda: enabled
-  #     # crossplane: enabled          
+  # cluster-1
+  - name: cluster-1
+    labels:
+      env: dev
+      datadog: enabled
+      keda: disabled
