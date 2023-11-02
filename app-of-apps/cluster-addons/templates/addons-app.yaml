@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra
+  namespace: argocd
+spec:
+  clusterResourceBlacklist:
+  - group: ""
+    kind: ""
+  - group: ""
+    kind: ""
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    argocd.argoproj.io/instance: cluster-addons-root
+  name: cluster-addons-root
+  namespace: argocd
+spec:
+  destination:
+    namespace: argocd
+    server: 'https://kubernetes.default.svc'
+  project: infra
+  sources:
+    - repoURL: 'git@github.com:MoranWeissman/msd-meetup-argocd-2023.git'
+      targetRevision: HEAD
+      path: app-of-apps/cluster-addons
+      helm:
+        valueFiles:
+          - "../../values/addons-list.yaml"
+          - "../../values/addons-config/defaults.yaml"
+  syncPolicy:
+    automated:
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

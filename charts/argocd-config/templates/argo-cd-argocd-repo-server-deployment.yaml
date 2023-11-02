@@ -1,0 +1,419 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    meta.helm.sh/release-name: argo-cd
+    meta.helm.sh/release-namespace: argocd
+  creationTimestamp: "2023-09-07T16:10:03Z"
+  labels:
+    app.kubernetes.io/component: repo-server
+    app.kubernetes.io/instance: argo-cd
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/version: v2.8.4
+    helm.sh/chart: argo-cd-5.46.7
+  name: argo-cd-argocd-repo-server
+  namespace: argocd
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-repo-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        checksum/cm: f377c398129bf7c788205f0661871c17ef7401eda2de6ff731a95f8cbb976597
+        checksum/cmd-params: 3e2b9b0ac13856acad64edfd10ec36a182cf6884e5f2e3e7e952593f221648ce
+        kubectl.kubernetes.io/restartedAt: "2023-10-31T09:53:31+02:00"
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: repo-server
+        app.kubernetes.io/instance: argo-cd
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: argocd-repo-server
+        app.kubernetes.io/part-of: argocd
+        app.kubernetes.io/version: v2.8.4
+        helm.sh/chart: argo-cd-5.46.7
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: argocd-repo-server
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      automountServiceAccountToken: true      
+      containers:
+      - args:
+        - /usr/local/bin/argocd-repo-server
+        - --port=8081
+        - --metrics-port=8084
+        env:
+        - name: AVP_TYPE
+          value: "awssecretsmanager"
+        - name: AWS_REGION
+          value: "eu-west-1"        
+        - name: ARGOCD_RECONCILIATION_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              key: timeout.reconciliation
+              name: argocd-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_LOGFORMAT
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.log.format
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_LOGLEVEL
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.log.level
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_PARALLELISM_LIMIT
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.parallelism.limit
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_LISTEN_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.listen.address
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_LISTEN_METRICS_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.metrics.listen.address
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_DISABLE_TLS
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.disable.tls
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_TLS_MIN_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.tls.minversion
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_TLS_MAX_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.tls.maxversion
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_TLS_CIPHERS
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.tls.ciphers
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_CACHE_EXPIRATION
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.repo.cache.expiration
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: REDIS_SERVER
+          valueFrom:
+            configMapKeyRef:
+              key: redis.server
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: REDIS_COMPRESSION
+          valueFrom:
+            configMapKeyRef:
+              key: redis.compression
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: REDISDB
+          valueFrom:
+            configMapKeyRef:
+              key: redis.db
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: REDIS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: redis-username
+              name: argo-cd-argocd-redis
+              optional: true
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: redis-password
+              name: argo-cd-argocd-redis
+              optional: true
+        - name: ARGOCD_DEFAULT_CACHE_EXPIRATION
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.default.cache.expiration
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_OTLP_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              key: otlp.address
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_MAX_COMBINED_DIRECTORY_MANIFESTS_SIZE
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.max.combined.directory.manifests.size
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_PLUGIN_TAR_EXCLUSIONS
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.plugin.tar.exclusions
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_ALLOW_OUT_OF_BOUNDS_SYMLINKS
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.allow.oob.symlinks
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_STREAMED_MANIFEST_MAX_TAR_SIZE
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.streamed.manifest.max.tar.size
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_REPO_SERVER_STREAMED_MANIFEST_MAX_EXTRACTED_SIZE
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.streamed.manifest.max.extracted.size
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: ARGOCD_GIT_MODULES_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              key: reposerver.enable.git.submodule
+              name: argocd-cmd-params-cm
+              optional: true
+        - name: HELM_CACHE_HOME
+          value: /helm-working-dir
+        - name: HELM_CONFIG_HOME
+          value: /helm-working-dir
+        - name: HELM_DATA_HOME
+          value: /helm-working-dir
+        image: quay.io/argoproj/argocd:v2.8.4
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz?full=true
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: repo-server
+        ports:
+        - containerPort: 8081
+          name: repo-server
+          protocol: TCP
+        - containerPort: 8084
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /app/config/ssh
+          name: ssh-known-hosts
+        - mountPath: /app/config/tls
+          name: tls-certs
+        - mountPath: /app/config/gpg/source
+          name: gpg-keys
+        - mountPath: /app/config/gpg/keys
+          name: gpg-keyring
+        - mountPath: /app/config/reposerver/tls
+          name: argocd-repo-server-tls
+        - mountPath: /helm-working-dir
+          name: helm-working-dir
+        - mountPath: /home/argocd/cmp-server/plugins
+          name: plugins
+        - mountPath: /tmp
+          name: tmp
+        - name: custom-tools
+          mountPath: /usr/local/bin/argocd-vault-plugin
+          subPath: argocd-vault-plugin          
+      - name: avp-helm
+        command: [/var/run/argocd/argocd-cmp-server]
+        image: quay.io/argoproj/argocd:v2.8.4
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+        env:
+        - name: AVP_TYPE
+          value: "awssecretsmanager"
+        - name: AWS_REGION
+          value: "eu-west-1"      
+        volumeMounts:
+          - mountPath: /var/run/argocd
+            name: var-files
+          - mountPath: /home/argocd/cmp-server/plugins
+            name: plugins
+          - mountPath: /tmp
+            name: tmp
+          # Register plugins into sidecar
+          - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+            subPath: avp-helm.yaml
+            name: cmp-plugin
+          # Important: Mount tools into $PATH
+          - name: custom-tools
+            subPath: argocd-vault-plugin
+            mountPath: /usr/local/bin/argocd-vault-plugin
+      # argocd-vault-plugin with plain YAML
+      - name: avp
+        command: [/var/run/argocd/argocd-cmp-server]
+        image: quay.io/argoproj/argocd:v2.8.4
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+        env:
+        - name: AVP_TYPE
+          value: "awssecretsmanager"
+        - name: AWS_REGION
+          value: "eu-west-1"                
+        volumeMounts:
+          - mountPath: /var/run/argocd
+            name: var-files
+          - mountPath: /home/argocd/cmp-server/plugins
+            name: plugins
+          - mountPath: /tmp
+            name: tmp
+          # Register plugins into sidecar
+          - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+            subPath: avp.yaml
+            name: cmp-plugin
+          # Important: Mount tools into $PATH
+          - name: custom-tools
+            subPath: argocd-vault-plugin
+            mountPath: /usr/local/bin/argocd-vault-plugin      
+      dnsPolicy: ClusterFirst
+      initContainers:
+      # Download tools      
+      - name: download-tools
+        image: alpine:3.8
+        command: [sh, -c]
+        env:
+          - name: AVP_VERSION
+            value: "1.16.1"
+        args:
+          - >-
+            wget -O argocd-vault-plugin
+            https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v${AVP_VERSION}/argocd-vault-plugin_${AVP_VERSION}_linux_amd64 &&
+            chmod +x argocd-vault-plugin &&
+            mv argocd-vault-plugin /custom-tools/
+        volumeMounts:
+          - mountPath: /custom-tools
+            name: custom-tools      
+      - command:
+        - /bin/cp
+        - -n
+        - /usr/local/bin/argocd
+        - /var/run/argocd/argocd-cmp-server
+        image: quay.io/argoproj/argocd:v2.8.4
+        imagePullPolicy: IfNotPresent
+        name: copyutil
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/argocd
+          name: var-files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 999
+      serviceAccount: argo-cd-argocd-repo-server
+      serviceAccountName: argo-cd-argocd-repo-server
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: helm-working-dir
+      - emptyDir: {}
+        name: plugins
+      - emptyDir: {}
+        name: var-files
+      - emptyDir: {}
+        name: tmp
+      - configMap:
+          defaultMode: 420
+          name: argocd-ssh-known-hosts-cm
+        name: ssh-known-hosts
+      - configMap:
+          defaultMode: 420
+          name: argocd-tls-certs-cm
+        name: tls-certs
+      - configMap:
+          defaultMode: 420
+          name: argocd-gpg-keys-cm
+        name: gpg-keys
+      - emptyDir: {}
+        name: gpg-keyring
+      - name: argocd-repo-server-tls
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key
+          - key: ca.crt
+            path: ca.crt
+          optional: true
+          secretName: argocd-repo-server-tls
+      - name: custom-tools
+        emptyDir: {}          
+      - configMap:
+          name: cmp-plugin
+        name: cmp-plugin

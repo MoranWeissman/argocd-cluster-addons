@@ -1,1 +1,1 @@
-roleArn: "arn:aws:iam::12345678910:role/ArgoCD"
+roleArn: "arn:aws:iam::111111111111:role/ArgoCD"

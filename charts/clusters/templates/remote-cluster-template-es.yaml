@@ -1,0 +1,67 @@
+{{- range .Values.clusters }}
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ .name }}
+  namespace: argocd
+spec:
+  secretStoreRef:
+    name: global-secret-store
+    kind: ClusterSecretStore
+  refreshInterval: "1h"
+  target:
+    name: {{ .name }}
+    creationPolicy: 'Owner'
+    template:
+      type: Opaque
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: cluster
+          {{- range $key, $value := .labels }}
+          {{ $key }}: {{ $value }}
+          {{- end }}      
+      data:
+        name: {{ .name }}
+        namespace: argocd
+        server: '{{"{{ .host }}"}}'
+        config: |
+          {
+            "execProviderConfig": {
+              "apiVersion": "client.authentication.k8s.io/v1beta1",
+              "command": "argocd-k8s-auth",
+              "args": [
+                "aws",
+                "--cluster-name",
+                "{{"{{ .clusterName }}"}}",
+                "--role-arn",
+                "arn:aws:iam::{{"{{ .accountId }}"}}:role/Antelliq-EKS-Admin-Assume-Role"
+              ],
+              "env": {
+                "AWS_REGION": "eu-west-1"
+              }
+            },
+            "tlsClientConfig": {
+              "insecure": false,
+              "caData": "{{"{{ .caData }}"}}"
+            }
+          }
+  data:
+    - secretKey: clusterName
+      remoteRef:
+        key: {{ .name }}
+        property: clusterName
+    - secretKey: host
+      remoteRef:
+        key: {{ .name }}
+        property: host
+    - secretKey: caData
+      remoteRef:
+        key: {{ .name }}
+        property: caData
+        decodingStrategy: None
+    - secretKey: accountId
+      remoteRef:
+        key: {{ .name }}
+        property: accountId  
+---
+{{- end }}

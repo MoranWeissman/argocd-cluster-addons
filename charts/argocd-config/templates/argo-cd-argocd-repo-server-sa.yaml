@@ -4,5 +4,5 @@ kind: ServiceAccount
 metadata:
   annotations:
     eks.amazonaws.com/role-arn: {{ .Values.roleArn }}
-  name: argocd-repo-server
+  name: argo-cd-argocd-repo-server
   namespace: argocd

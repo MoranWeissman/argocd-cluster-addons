@@ -43,18 +43,39 @@ spec:
           matchLabels:
             argocd.argoproj.io/secret-type: cluster                  
             env: '{{ $environment.env }}'
-            {{ $appset.appName }}: 'enabled'                  
-  template:    
+            {{ $appset.appName }}: enabled
+  template:
     metadata:
       name: '{{ $appset.appName }}-{{`{{.name}}`}}'
       finalizers:
         - resources-finalizer.argocd.argoproj.io      
     spec:
       project: {{ $appset.appName }}-{{ $environment.env }}
-      source:
-        repoURL: {{ $appset.repoURL }}
-        targetRevision: {{ $environment.version }}
-        chart: {{ $appset.chart }}
+      sources:
+        - repoURL: {{ $appset.repoURL }}
+          targetRevision: {{ $environment.version }}
+          chart: {{ $appset.chart }}
+          helm:
+            valueFiles:
+            - '$values/values/addons-config/overrides/{{`{{.name}}`}}/{{ $appset.appName }}.yaml'
+            valuesObject:
+              {{- with index $.Values.addonsConfig.default $appset.appName }}
+              {{- toYaml . | nindent 14 }}
+              {{- end }}
+            {{ if eq $appset.appName "datadog" }}
+              parameters:
+                - name: 'datadog.apiKeyExistingSecret'
+                  value: '{{`{{.name}}`}}'
+                - name: 'datadog.clusterName'
+                  value: '{{`{{.name}}`}}'
+                - name: 'datadog.env[0].name'
+                  value: DD_ENV
+                - name: 'datadog.env[0].value'
+                  value: '{{`{{.env}}`}}'
+            {{ end }}      
+        - repoURL: git@github.com:MoranWeissman/msd-meetup-argocd-2023.git
+          targetRevision: HEAD
+          ref: values
       destination:
         server: '{{`{{.server}}`}}'
         namespace: {{ $appset.appName }}
