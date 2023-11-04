@@ -44,6 +44,105 @@ This solution employs ArgoCD to manage the deployment of various Kubernetes add-
 ## Why Use This Solution?
 Utilizing a GitOps approach, this solution ensures that add-on deployments are consistent, declarative, and version-controlled, thereby enhancing the maintainability and scalability of cluster management.
 
+## Prerequisites
+
+Before deploying cluster add-ons, ensure the `external-secrets-operator` is installed in your cluster. This operator enables the synchronization of secrets from external services like AWS Secrets Manager into Kubernetes.
+
+Install the `external-secrets-operator` using the following ArgoCD Application definition:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://charts.external-secrets.io'
+    targetRevision: '0.9.7'
+    chart: external-secrets
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: external-secrets
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true
+```
+The external-secrets service account in your cluster must be associated with an IAM role that has permissions to read secrets from AWS Secrets Manager. The necessary policy for this IAM role is as follows:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:GetResourcePolicy",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:ListSecretVersionIds"
+            ],
+            "Resource": "arn:aws:secretsmanager:eu-west-1:111111111111:secret:*"
+        }
+    ]
+}
+```
+Additionally, you must set up a trust relationship for the IAM role, allowing the EKS cluster to assume this role:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::111111111111:oidc-provider/oidc.eks.eu-west-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B716D3041E"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "oidc.eks.eu-west-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B716D3041E:sub": "system:serviceaccount:external-secrets:external-secrets"
+                }
+            }
+        }
+    ]
+}
+```
+
+Be sure to replace 111111111111 with your AWS account ID and EXAMPLED539D4633E53DE1B716D3041E with the actual OIDC ID from your EKS cluster OIDC provider.
+
+In addition to the above, you will need to modify the service account YAML for the external-secrets-operator to include the ARN of the IAM role. This modification is done in the global.yaml values file. Here is an example of how to annotate the service account with the role ARN:
+
+```yaml
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::111111111111:role/YourExternalSecretsRole
+```
+
+The ClusterSecretStore resource is created as part of the solution to define which secret manager we use (in this case, AWS Secrets Manager) and how the external-secrets-operator interacts with it. It's essential as it tells the operator where and how to fetch the secrets:
+
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: aws-secrets
+  namespace: external-secrets
+spec:
+  provider:
+    aws:
+      service: SecretsManager
+      region: eu-west-1
+      auth:
+        jwt:
+          serviceAccountRef:
+            name: external-secrets
+            namespace: external-secrets
+```
+This resource should match the service account equipped with the necessary IAM role to access AWS Secrets Manager.
+
+
 ## Bootstrap Installation
 To install the cluster add-ons:
 
