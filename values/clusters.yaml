@@ -1,7 +1,9 @@
 clusters:
-  # cluster-1
+
+# | -- Environment: Dev -- | #
+
   - name: cluster-1
     labels:
       env: dev
-      datadog: enabled
+      datadog: disabled
       keda: disabled

@@ -1,8 +1,0 @@
-apiVersion: v2
-name: datadog-apikey-secret-template
-description: A Helm chart for managing cluster addons applicationsets and projects
-type: application
-version: 1.0.0
-maintainers:
-  - name: moran.weissman
-    email: moran.weissman@merck.com
