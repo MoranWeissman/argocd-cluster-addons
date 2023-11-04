@@ -96,6 +96,7 @@ To enable an addon for a cluster:
     clusters:
       - name: my-cluster
         labels:
+          env: dev
           datadog: enabled
     ```
 3. Create a pull request with this change for the necessary approvals.
