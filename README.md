@@ -29,10 +29,12 @@ Before diving into the technical details of managing cluster add-ons with ArgoCD
   - All changes to the cluster configurations are to be made through pull requests. Direct commits to the main branch are not allowed to ensure a reviewable and auditable trail of modifications.
 
 - **Review and Approval**:
-  - Pull requests must be reviewed providing a layer of scrutiny to uphold the quality and security of changes.
+  - Pull requests must be reviewed by at least two DevOps engineers, providing a dual layer of scrutiny to uphold the quality and security of changes.
+  - Inclusion of a team or domain lead in the review process is required to align changes with overarching organizational goals and policies.
 
 - **Merging Process**:
   - Merging of pull requests is contingent upon successful reviews and approvals from the required personnel.
+  - Pull requests must also pass all automated checks and tests before they can be merged.
 
 This workflow is integral to our operations and ensures that all changes are implemented responsibly and in accordance with established protocols.
 
@@ -47,11 +49,10 @@ To install the cluster add-ons:
 
 1. Connect to your Kubernetes cluster context.
 2. Navigate to the `app-of-apps` folder in your local copy of this repository.
-3. Run the following command in each `app-of-apps` directory:
+3. Run the following command in the `cluster-addons` directory which is inside the `app-of-apps` directory:
 ```
 helm template . | kubectl apply -f - -n argocd
 ```
-Start with `cluster-addons`, followed by `datadog-apiKeys`.
 
 ## Usage
 
@@ -60,6 +61,8 @@ Before attaching a cluster to ArgoCD:
 
 - Create a corresponding secret in AWS Secret Manager with the cluster's name.
 - Include essential information: `clusterName`, `host`, `caData`, and `accountId`.
+
+_Note to self: Ask the infra team to automate this with Terraform if possible._
 
 After creating the AWS secret:
 
@@ -104,8 +107,6 @@ When installing Datadog:
 - Optionally, create a `datadogApiKey` in AWS Secret Manager to auto-generate the required Kubernetes secret.
 - Add a dummy or placeholder value for `datadogApiKey` if Datadog is not in use immediately.
 
-_Note: The `datadog-apikeys` app-of-apps is only necessary when utilizing Datadog._
-
 #### Example: Updating Default Configurations
 Suppose you need to change the default log level for Datadog across all clusters:
 1. Open `values/addons-config/defaults.yaml`.
@@ -138,55 +139,52 @@ Below is the directory tree of this repository:
 ```
 ├── README.md
 ├── app-of-apps
-│ ├── cluster-addons
-│ │ ├── Chart.yaml
-│ │ ├── templates
-│ │ │ ├── addons-app.yaml
-│ │ │ ├── apps
-│ │ │ │ ├── argocd-config.yaml
-│ │ │ │ └── remote-clusters.yaml
-│ │ │ └── appsets
-│ │ │ └── applicationset.yaml
-│ │ └── values.yaml
-│ └── datadog-apikeys
-│ ├── Chart.yaml
-│ ├── templates
-│ │ ├── apps
-│ │ │ └── datadog-apikey-secret.yaml
-│ │ └── datadog-apikeys.yaml
-│ └── values.yaml
+│   └── cluster-addons
+│       ├── Chart.yaml
+│       ├── templates
+│       │   ├── addons-app.yaml
+│       │   ├── apps
+│       │   │   ├── argocd-config.yaml
+│       │   │   ├── datadog-apikey-secret.yaml
+│       │   │   └── remote-clusters.yaml
+│       │   └── appsets
+│       │       └── applicationset.yaml
+│       └── values.yaml
 ├── charts
-│ ├── argocd-config
-│ │ ├── Chart.yaml
-│ │ ├── templates
-│ │ │ ├── argo-cd-argocd-repo-server-deployment.yaml
-│ │ │ ├── argo-cd-argocd-repo-server-sa.yaml
-│ │ │ ├── argocd-application-controller-sa.yaml
-│ │ │ ├── argocd-applicationset-controller-sa.yaml
-│ │ │ ├── argocd-cm.yaml
-│ │ │ ├── argocd-server-sa.yaml
-│ │ │ └── cmp-plugin.yaml
-│ │ └── values.yaml
-│ ├── clusters
-│ │ ├── Chart.yaml
-│ │ ├── templates
-│ │ │ ├── cluster-secret-store.yaml
-│ │ │ └── remote-cluster-template-es.yaml
-│ │ └── values.yaml
-│ └── datadog-apikey-secret
-│ ├── Chart.yaml
-│ ├── templates
-│ │ └── datadog-apikey-secret.yaml
-│ └── values.yaml
+│   ├── argocd-config
+│   │   ├── Chart.yaml
+│   │   ├── templates
+│   │   │   ├── argo-cd-argocd-repo-server-deployment.yaml
+│   │   │   ├── argo-cd-argocd-repo-server-sa.yaml
+│   │   │   ├── argocd-application-controller-sa.yaml
+│   │   │   ├── argocd-applicationset-controller-sa.yaml
+│   │   │   ├── argocd-cm.yaml
+│   │   │   ├── argocd-server-sa.yaml
+│   │   │   └── cmp-plugin.yaml
+│   │   └── values.yaml
+│   ├── clusters
+│   │   ├── Chart.yaml
+│   │   ├── templates
+│   │   │   ├── cluster-secret-store.yaml
+│   │   │   └── remote-cluster-template-es.yaml
+│   │   └── values.yaml
+│   └── datadog-apikey-secret
+│       ├── Chart.yaml
+│       ├── templates
+│       │   └── datadog-apikey-secret.yaml
+│       └── values.yaml
 └── values
-├── addons-config
-│ ├── defaults.yaml
-│ └── overrides
-│ └── swine-dev
-│ ├── datadog.yaml
-│ └── keda.yaml
-├── addons-list.yaml
-├── clusters.yaml
-└── global.yaml
+    ├── addons-config
+    │   ├── defaults.yaml
+    │   └── overrides
+    │       ├── animo-dev-eks
+    │       │   └── datadog.yaml
+    │       ├── animo-dev-eks.yaml
+    │       └── swine-dev
+    │           ├── datadog.yaml
+    │           └── keda.yaml
+    ├── addons-list.yaml
+    ├── clusters.yaml
+    └── global.yaml
 ```
 ---
