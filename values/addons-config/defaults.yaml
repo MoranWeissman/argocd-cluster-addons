@@ -5,8 +5,7 @@
 # ==========================================================
 addonsConfig:
   default:
-    
-    # ---- Datadog Configuration ----
+    # ---- Datadog Configuration ---- #
     datadog:
       datadog:
         logLevel: INFO
@@ -16,7 +15,7 @@ addonsConfig:
           autoMultiLineDetection: 'true'
         containerExcludeLogs: 'kube_namespace:.*'
     
-    # ---- KEDA Configuration ----
+    # ---- KEDA Configuration ---- #
     keda:
       serviceAccount:
         name: keda-operator-sa

@@ -22,7 +22,7 @@ data:
           - sh
           - "-c"
           - |
-            helm template $ARGOCD_APP_NAME -n $ARGOCD_APP_NAMESPACE $HELM_ARGS . --include-crds |
+            helm template $ARGOCD_APP_NAME -n $ARGOCD_APP_NAMESPACE $ARGOCD_ENV_HELM_VALUES . |
             argocd-vault-plugin generate -
       lockRepo: false
   avp.yaml: |

@@ -1,4 +1,5 @@
 {{- range .Values.clusters }}
+{{- $globalName := printf "%s-%s" (.secretPrefix | default "") .name | trimPrefix "-" }}
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
@@ -48,20 +49,20 @@ spec:
   data:
     - secretKey: clusterName
       remoteRef:
-        key: {{ .name }}
+        key: {{ $globalName }}
         property: clusterName
     - secretKey: host
       remoteRef:
-        key: {{ .name }}
+        key: {{ $globalName }}
         property: host
     - secretKey: caData
       remoteRef:
-        key: {{ .name }}
+        key: {{ $globalName }}
         property: caData
         decodingStrategy: None
     - secretKey: accountId
       remoteRef:
-        key: {{ .name }}
+        key: {{ $globalName }}
         property: accountId  
 ---
 {{- end }}

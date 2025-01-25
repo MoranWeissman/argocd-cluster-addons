@@ -10,7 +10,7 @@ spec:
   project: infra
   source:
     path: charts/argocd-config
-    repoURL: git@github.com:MoranWeissman/msd-meetup-argocd-2023.git
+    repoURL: {{ .Values.repoURL }}
     targetRevision: HEAD
     helm:
       valueFiles:

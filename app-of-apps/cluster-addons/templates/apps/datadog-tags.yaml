@@ -1,0 +1,58 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: datadog-tags
+  namespace: argocd
+spec:
+  clusterResourceBlacklist:
+  - group: ""
+    kind: ""
+  - group: ""
+    kind: ""
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+---
+
+{{- range $index, $cluster := .Values.clusters }}
+{{- range $i, $label := $cluster.labels }}
+{{- if and (eq $i "datadog") (eq $label "enabled") }}
+{{- $globalName := (printf "%s-%s" ($cluster.secretPrefix | default "") $cluster.name) | trimPrefix "-" }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datadog-tags-{{ $cluster.name }}
+spec:   
+  destination:
+    namespace: datadog
+    name: {{ $cluster.name }}
+  source:
+    path: charts/datadog-tags
+    repoURL: {{ $.Values.repoURL }}
+    targetRevision: HEAD
+    plugin:
+      name: argocd-vault-plugin-helm
+      env:
+        - name: HELM_VALUES
+          value: --set clusterName='{{ $globalName }}'
+  project: datadog-tags
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true    
+---  
+{{- end }}
+{{- end }}
+{{- end }}

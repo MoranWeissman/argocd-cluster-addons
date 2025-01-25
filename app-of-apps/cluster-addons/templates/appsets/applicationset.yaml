@@ -37,6 +37,7 @@ metadata:
   namespace: argocd
 spec:
   goTemplate: true
+  goTemplateOptions: ["missingkey=zero"]
   generators:
     - clusters:
         selector:
@@ -44,6 +45,9 @@ spec:
             argocd.argoproj.io/secret-type: cluster                  
             env: '{{ $environment.env }}'
             {{ $appset.appName }}: enabled
+        values:
+          revision: '{{ $environment.version }}'
+          app: '{{ $appset.appName }}'
   template:
     metadata:
       name: '{{ $appset.appName }}-{{`{{.name}}`}}'
@@ -53,7 +57,7 @@ spec:
       project: {{ $appset.appName }}-{{ $environment.env }}
       sources:
         - repoURL: {{ $appset.repoURL }}
-          targetRevision: {{ $environment.version }}
+          targetRevision: '{{`{{default .values.revision (index .metadata.labels (print .values.app "-version"))}}`}}'
           chart: {{ $appset.chart }}
           helm:
             valueFiles:
@@ -63,17 +67,17 @@ spec:
               {{- toYaml . | nindent 14 }}
               {{- end }}
             {{ if eq $appset.appName "datadog" }}
-              parameters:
-                - name: 'datadog.apiKeyExistingSecret'
-                  value: '{{`{{.name}}`}}'
-                - name: 'datadog.clusterName'
-                  value: '{{`{{.name}}`}}'
-                - name: 'datadog.env[0].name'
-                  value: DD_ENV
-                - name: 'datadog.env[0].value'
-                  value: '{{`{{.env}}`}}'
-            {{ end }}      
-        - repoURL: git@github.com:MoranWeissman/msd-meetup-argocd-2023.git
+            parameters:
+              - name: 'datadog.apiKeyExistingSecret'
+                value: '{{`{{.name}}`}}'
+              - name: 'datadog.clusterName'
+                value: '{{`{{.name}}`}}'
+              - name: 'datadog.env[0].name'
+                value: DD_ENV
+              - name: 'datadog.env[0].value'
+                value: {{ $environment.env }}
+            {{ end }}
+        - repoURL: {{ $.Values.repoURL }}
           targetRevision: HEAD
           ref: values
       destination:

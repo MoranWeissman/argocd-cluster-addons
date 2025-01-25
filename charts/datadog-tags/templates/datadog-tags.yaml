@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datadog-tags
+  annotations:
+    avp.kubernetes.io/path: {{ .Values.clusterName  }}
+type: Opaque
+stringData:
+  DD_TAGS: <dd_tags>
+  

@@ -12,11 +12,12 @@ spec:
   project: infra
   source:
     path: charts/clusters
-    repoURL: git@github.com:MoranWeissman/msd-meetup-argocd-2023.git
+    repoURL: {{ .Values.repoURL }}
     targetRevision: HEAD
     helm:
       valueFiles:
       - ../../values/clusters.yaml 
+      - ../../values/global.yaml
   syncPolicy:
     automated:
       prune: true
