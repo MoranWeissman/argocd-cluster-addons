@@ -1,13 +1,5 @@
 clusters:
 
-# Example for new clusters which will have the secret prefix in the AWS Secret Manager secret name when created by Ops team.
-# This new key 'secretPrefix' will only exist for new clusters and it's here for supporting previous cluster secrets which don't have the prefix.
-
-  # - name: cluster-name
-  #   secretPrefix: k8s
-  #   labels:
-  #     env: dev
-
 # | -- Environment: Dev -- | #
 
   - name: cluster-1

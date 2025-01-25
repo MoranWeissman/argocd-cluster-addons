@@ -26,7 +26,10 @@ spec:
 {{- range $index, $cluster := .Values.clusters }}
 {{- range $i, $label := $cluster.labels }}
 {{- if and (eq $i "datadog") (eq $label "enabled") }}
-{{- $globalName := (printf "%s-%s" ($cluster.secretPrefix | default "") $cluster.name) | trimPrefix "-" }}
+# This application creates a secret in Kubernetes containing Datadog tags
+# It fetches the tags from the cluster's AWS Secrets Manager secret
+# The secret must contain a 'dd_tags' key with comma-separated tags
+# Example: "dd_tags": "env:prod,region:eu-west-1,project:demo"
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -44,7 +47,7 @@ spec:
       name: argocd-vault-plugin-helm
       env:
         - name: HELM_VALUES
-          value: --set clusterName='{{ $globalName }}'
+          value: --set clusterName='{{ $cluster.name }}'
   project: datadog-tags
   syncPolicy:
     automated:

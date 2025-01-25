@@ -109,7 +109,7 @@ When installing Datadog:
 
 #### Example: Updating Default Configurations
 Suppose you need to change the default log level for Datadog across all clusters:
-1. Open `values/addons-config/defaults.yaml`.
+1. Open `values/addons-values/defaults.yaml`.
 2. Modify the `datadog` configuration:
     ```yaml
     datadog:
@@ -118,21 +118,24 @@ Suppose you need to change the default log level for Datadog across all clusters
 
 ## Managing Addon Values
 
-### Updating Default Addon Configurations
-Default values for addons are specified in `values/addons-config/defaults.yaml`, which are applied across all environments. Ensure to update this file when introducing new addons.
+### Default Addon Values
+Default values for addons are specified in `values/addons-values/defaults.yaml`, which serves as the base configuration for all clusters.
 
-### Overriding Addon Configurations for a Specific Cluster
-For individual cluster configurations, create override files within the `values/addons-config/overrides/<cluster-name>/` directory. This allows for cluster-specific customization of addons.
+### Cluster-Specific Values
+Each cluster can have its own specific values that will be merged with the defaults. These are organized in `values/addons-values/clusters/<cluster-name>/` with separate files for each addon.
 
-#### Example: Cluster-Specific Overrides
-If you need to set a specific Datadog log level for the `dev-cluster`, you would:
-1. Edit the file at `values/addons-config/overrides/dev-cluster/datadog.yaml`.
-2. Set your specific configurations:
+#### Example: Setting Cluster-Specific Values
+To set specific Datadog configurations for `dev-cluster`:
+1. Create/edit the file at `values/addons-values/clusters/dev-cluster/datadog.yaml`
+2. Add your values:
     ```yaml
     datadog:
       logLevel: DEBUG
+      # These values will be merged with the defaults
+      additionalConfig:
+        customTag: dev-environment
     ```
-    
+
 ## Repository Structure
 
 Below is the directory tree of this repository:
@@ -174,17 +177,52 @@ Below is the directory tree of this repository:
 │       │   └── datadog-apikey-secret.yaml
 │       └── values.yaml
 └── values
-    ├── addons-config
-    │   ├── defaults.yaml
-    │   └── overrides
-    │       ├── animo-dev-eks
-    │       │   └── datadog.yaml
-    │       ├── animo-dev-eks.yaml
-    │       └── swine-dev
-    │           ├── datadog.yaml
-    │           └── keda.yaml
+    ├── addons-values
+    │   ├── defaults.yaml
+    │   └── clusters
+    │       ├── cluster-1
+    │       │   ├── datadog.yaml
+    │       │   └── keda.yaml
+    │       └── swine-dev
+    │           ├── datadog.yaml
+    │           └── keda.yaml
     ├── addons-list.yaml
     ├── clusters.yaml
     └── global.yaml
 ```
----
+
+### Datadog Integration Prerequisites
+
+#### AWS Secrets Manager Configuration
+
+1. **API Keys Secret**
+The solution expects a secret in AWS Secrets Manager at path `datadog-api-keys-integration` containing Datadog API keys for each cluster:
+```json
+{
+  "demo-prod": "your-datadog-api-key-for-demo-prod",
+  "demo-staging": "your-datadog-api-key-for-demo-staging",
+  "demo-dev": "your-datadog-api-key-for-demo-dev"
+}
+```
+
+2. **Cluster Tags Configuration**
+Each cluster's AWS Secrets Manager secret (used for ArgoCD cluster registration) must include a `dd_tags` key. This secret is also used by External Secrets to register the cluster in ArgoCD.
+
+Example cluster secret structure:
+```json
+{
+  "clusterName": "demo-prod",
+  "host": "https://your-cluster-endpoint",
+  "caData": "your-cluster-ca-data",
+  "accountId": "your-aws-account-id",
+  "dd_tags": "env:prod,region:eu-west-1,project:demo"
+}
+```
+
+The `dd_tags` value should follow Datadog's tag format: `key1:value1,key2:value2`. Common tags include:
+- env: Environment name (prod, staging, dev)
+- region: AWS region or datacenter location
+- project: Project or team name
+- custom tags as needed
+
+These tags will be automatically picked up by the Datadog agent and used for filtering and organizing metrics, logs, and traces in the Datadog UI.
