@@ -36,13 +36,14 @@ spec:
     server: 'https://kubernetes.default.svc'
   project: infra
   sources:
-    - repoURL: 'git@github.com:MoranWeissman/msd-meetup-argocd-2023.git'
+    - repoURL: {{ .Values.repoURL }}
       targetRevision: HEAD
       path: app-of-apps/cluster-addons
-      helm:
-        valueFiles:
-          - "../../values/addons-list.yaml"
-          - "../../values/addons-config/defaults.yaml"
+      plugin:
+        name: argocd-vault-plugin-helm
+        env:
+          - name: HELM_VALUES
+            value: -f ../../values/addons-list.yaml -f ../../values/addons-values/defaults.yaml -f ../../values/clusters.yaml -f ../../values/iam-roles.yaml
   syncPolicy:
     automated:
       prune: true

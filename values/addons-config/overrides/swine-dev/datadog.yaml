@@ -1,6 +1,0 @@
-  # ===============================
-  # Cluster-specific configurations
-  # ===============================
-
-datadog:
-  containerIncludeLogs: 'kube_namespace:cluster-1'

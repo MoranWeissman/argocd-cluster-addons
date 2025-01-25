@@ -1,7 +1,12 @@
 clusters:
+
 # | -- Environment: Dev -- | #
+
+  # Other clusters
   - name: cluster-1
     labels:
       env: dev
-      datadog: disabled
-      keda: disabled
+      datadog: enabled
+      datadog-version: "3.70.7"
+      keda: enabled
+      external-secrets: enabled

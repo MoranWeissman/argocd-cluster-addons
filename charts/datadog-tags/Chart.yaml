@@ -1,6 +1,6 @@
 apiVersion: v2
-name: datadog-apikey-secret-template
-description: A Helm chart for managing cluster addons applicationsets and projects
+name: datadog-tags
+description: A Helm chart for managing datadog apikeys secrets
 type: application
 version: 1.0.0
 maintainers:

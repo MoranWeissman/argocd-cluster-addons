@@ -1,2 +1,1 @@
-roleArn: "arn:aws:iam::111111111111:role/ArgoCD"
 external-secrets-sa-role: "arn:aws:iam::111111111111:role/exteral-secrets-argocd"

@@ -1,0 +1,20 @@
+# This secret fetches Datadog tags from the cluster's AWS Secrets Manager secret
+# The same secret is used by External Secrets to register the cluster in ArgoCD
+# Required structure in AWS Secrets Manager:
+# {
+#   "clusterName": "...",
+#   "host": "...",
+#   "caData": "...",
+#   "accountId": "...",
+#   "dd_tags": "env:prod,region:eu-west-1,project:demo" # Required for Datadog tagging
+# }
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datadog-tags
+  annotations:
+    avp.kubernetes.io/path: {{ .Values.clusterName }}
+type: Opaque
+stringData:
+  DD_TAGS: <dd_tags>
+  

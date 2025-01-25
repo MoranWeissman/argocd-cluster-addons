@@ -1,2 +1,2 @@
 clusters: []
-external-secrets-sa-role: ""
+external_secrets_sa_role: ""
