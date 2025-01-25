@@ -1,4 +1,15 @@
 applicationsets:
+  - appName: external-secrets
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    environments:
+      - env: argocd-control-plane  # Special env for control plane installation
+        version: 0.9.10
+        valuesObject: {}
+      - env: dev                   # Regular environments
+        version: 0.9.10
+        valuesObject: {}
+
   - appName: datadog
     repoURL: https://helm.datadoghq.com
     chart: datadog

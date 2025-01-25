@@ -2,6 +2,7 @@ clusters:
 
 # | -- Environment: Dev -- | #
 
+  # Other clusters
   - name: cluster-1
     labels:
       env: dev

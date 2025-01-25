@@ -43,7 +43,7 @@ spec:
         name: argocd-vault-plugin-helm
         env:
           - name: HELM_VALUES
-            value: -f ../../values/addons-list.yaml -f ../../values/addons-config/defaults.yaml -f ../../values/clusters.yaml
+            value: -f ../../values/addons-list.yaml -f ../../values/addons-values/defaults.yaml -f ../../values/clusters.yaml -f ../../values/iam-roles.yaml
   syncPolicy:
     automated:
       prune: true

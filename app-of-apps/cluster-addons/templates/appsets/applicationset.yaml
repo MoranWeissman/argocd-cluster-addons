@@ -1,5 +1,6 @@
 {{- range $index, $applicationSet := .Values.applicationsets }}
 {{- range $i, $environment := $applicationSet.environments }}
+# Create a project for each addon-environment combination
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -29,6 +30,7 @@ spec:
 
 {{- range $index, $appset := .Values.applicationsets }}
 {{- range $i, $environment := $appset.environments }}
+# Create an ApplicationSet for each addon-environment combination
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -40,6 +42,8 @@ spec:
   goTemplateOptions: ["missingkey=zero"]
   generators:
     - clusters:
+        # Select clusters based on environment and addon enablement
+        # This allows for selective addon deployment across clusters
         selector:
           matchLabels:
             argocd.argoproj.io/secret-type: cluster                  
@@ -56,16 +60,19 @@ spec:
     spec:
       project: {{ $appset.appName }}-{{ $environment.env }}
       sources:
+        # Primary source - the addon's Helm chart
         - repoURL: {{ $appset.repoURL }}
           targetRevision: '{{`{{default .values.revision (index .metadata.labels (print .values.app "-version"))}}`}}'
           chart: {{ $appset.chart }}
           helm:
+            # Load cluster-specific values from the values directory
             valueFiles:
-            - '$values/values/addons-config/overrides/{{`{{.name}}`}}/{{ $appset.appName }}.yaml'
+            - '$values/values/addons-values/clusters/{{`{{.name}}`}}/{{ $appset.appName }}.yaml'
             valuesObject:
               {{- with index $.Values.addonsConfig.default $appset.appName }}
               {{- toYaml . | nindent 14 }}
               {{- end }}
+            # Special handling for Datadog configuration
             {{ if eq $appset.appName "datadog" }}
             parameters:
               - name: 'datadog.apiKeyExistingSecret'
@@ -77,11 +84,19 @@ spec:
               - name: 'datadog.env[0].value'
                 value: {{ $environment.env }}
             {{ end }}
+        # Secondary source - reference to values repository
         - repoURL: {{ $.Values.repoURL }}
           targetRevision: HEAD
           ref: values
       destination:
+        # Special handling for control plane environment
+        # When env is "argocd-control-plane", deploy to the local cluster
+        # This is used primarily for ESO installation on the ArgoCD cluster
+        {{- if eq $environment.env "argocd-control-plane" }}
+        server: https://kubernetes.default.svc
+        {{- else }}
         server: '{{`{{.server}}`}}'
+        {{- end }}
         namespace: {{ $appset.appName }}
       syncPolicy:  
         automated:
