@@ -1,126 +1,101 @@
 # ArgoCD Cluster Addons Management
 
-This solution provides a scalable way to manage multiple clusters and their addons through ArgoCD. It implements the App of Apps pattern to manage addon deployments across multiple clusters with environment-based configuration.
+This solution provides a scalable way to manage addons across multiple clusters through ArgoCD. It utilizes ApplicationSets for dynamic addon deployment management, wrapped in an App of Apps pattern for the solution's components. The solution heavily leverages Helm templating for dynamic configuration generation.
 
 ## Features
-- Centralized addon management across multiple clusters
-- Environment-based configuration
-- Version control for addon deployments
-- Secure secrets management via AWS Secrets Manager
-- Support for gradual rollout of addon updates
-- Cluster-specific configuration overrides
+- Centralized addon management using ApplicationSets
+- Environment-based configuration through Helm templating
+- Version control and customization for addon deployments
+- Integration with AWS Secrets Manager via External Secrets Operator
+- Flexible per-cluster addon version selection
+- Per-cluster addon configuration customization
 
-## Solution Components
+## Architecture
 
-### AWS SecretStore Configuration
-The solution uses a ClusterSecretStore to access AWS Secrets Manager:
-```yaml
-apiVersion: external-secrets.io/v1beta1
-kind: ClusterSecretStore
-metadata:
-  name: global-secret-store
-spec:
-  provider:
-    aws:
-      service: SecretsManager
-      region: eu-west-1
-      auth:
-        jwt:
-          serviceAccountRef:
-            name: external-secrets
-            namespace: external-secrets
+### Components
+- **Root Application**: Manages the solution's components (ApplicationSets, ESO configuration, etc.)
+- **ApplicationSets**: Core engine for dynamic addon deployment across clusters
+- **External Secrets**: Fetches and provides cluster credentials and addon secrets from AWS Secrets Manager
+- **Helm Charts**: Provides templating and configuration management
+
+### Key Patterns Used
+- **ApplicationSets**: Dynamic application generation based on cluster metadata
+- **Helm Templating**: Powerful configuration management and value generation
+- **External Secrets**: Secure secret injection from AWS Secrets Manager
+
+### Directory Structure
 ```
-
-This configuration:
-- Uses IRSA for authentication
-- Connects to AWS Secrets Manager in eu-west-1
-- Provides cluster-wide access to secrets
-
-### Addon Configuration Structure
-The `values/addons-list.yaml` file defines all available addons:
-```yaml
-applicationsets:
-  - appName: external-secrets    # Name of the addon
-    repoURL: https://charts...   # Helm chart repository
-    chart: external-secrets      # Chart name
-    environments:                # Environment-specific configs
-      - env: argocd-control-plane
-        version: 0.9.10         # Chart version
-        valuesObject: {}        # Optional default values
+├── app-of-apps/          # Root application and ApplicationSets
+├── charts/              # Helm charts for components
+│   ├── clusters/        # Cluster registration
+│   └── datadog-*/      # Addon specific charts
+└── values/              # Configuration
+    ├── addons-values/   # Addon configurations
+    ├── addons-list.yaml # Addon definitions
+    ├── clusters.yaml    # Cluster definitions
+    └── iam-roles.yaml   # IAM configuration
 ```
-
-Each addon can have:
-- Multiple environment configurations
-- Different versions per environment
-- Default values via valuesObject
-- Custom sync options and configurations
-
-### Value Management
-
-#### Values Structure
-The solution uses several value files:
-1. `values/clusters.yaml`: Defines clusters and their labels
-2. `values/addons-values/defaults.yaml`: Default addon configurations
-3. `values/addons-values/clusters/<cluster>/`: Cluster-specific overrides
-
-#### Value Precedence
-Values are merged in this order (highest precedence first):
-1. Cluster-specific values
-2. Environment-specific values from addons-list.yaml
-3. Default values from addons-values/defaults.yaml
-4. Chart default values
-
-### Datadog Integration Details
-
-The solution manages two types of Datadog secrets:
-
-1. **API Keys**
-   - Stored in AWS Secrets Manager
-   - One key per cluster
-   - Mounted as Kubernetes secrets
-
-2. **Cluster Tags**
-   - Stored in cluster AWS secret
-   - Configured via dd_tags
-   - Used for Datadog agent configuration
-
-#### Secret Structure
-```yaml
-# API Key Secret
-apiVersion: v1
-kind: Secret
-metadata:
-  name: <cluster-name>
-stringData:
-  api-key: <from-aws-secrets>
-
-# Tags Secret
-apiVersion: v1
-kind: Secret
-metadata:
-  name: datadog-tags
-stringData:
-  DD_TAGS: <from-cluster-secret>
-```
-
-### Adding New Addons
-To add a new addon to the solution:
-1. Add it to `values/addons-list.yaml`:
-   ```yaml
-   applicationsets:
-     - appName: new-addon
-       repoURL: https://charts.new-addon.io
-       chart: new-addon
-       environments:
-         - env: dev
-           version: 1.0.0
-           valuesObject:  # Optional default values
-             key: value
-   ```
-2. Create cluster-specific values in `values/addons-values/clusters/` if needed
-3. Enable it via cluster labels in `values/clusters.yaml`
 
 ## Prerequisites
+
+### ArgoCD Requirements
+- ArgoCD version >= 2.4.0
+- ApplicationSet controller enabled
+
+#### Configuration Options
+ArgoCD needs the Vault Plugin configured. This can be done in two ways:
+
+1. **Recommended**: Via ArgoCD Helm values
+```yaml
+server:
+  config:
+    configManagementPlugins: |
+      - name: argocd-vault-plugin-helm
+        init:
+          command: ["/bin/sh", "-c"]
+          args: ["helm dependency build"]
+        generate:
+          command: ["sh", "-c"]
+          args: ["helm template $ARGOCD_APP_NAME ${HELM_VALUES} . | argocd-vault-plugin generate -"]
+```
+
+2. Alternatively: Via ConfigMap
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  configManagementPlugins: |
+    [plugin configuration as above]
+```
+
+#### Plugin Installation
+The AVP plugin needs to be installed in the ArgoCD repo-server. We recommend configuring this via ArgoCD Helm values:
+```yaml
+repoServer:
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+  initContainers:
+    - name: download-tools
+      image: alpine:3.8
+      command: [sh, -c]
+      args:
+        - wget -O argocd-vault-plugin 
+          https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v1.x.x/argocd-vault-plugin_linux_amd64 &&
+          chmod +x argocd-vault-plugin &&
+          mv argocd-vault-plugin /custom-tools/
+      volumeMounts:
+        - mountPath: /custom-tools
+          name: custom-tools
+```
+
+### AWS Requirements
+- AWS Secrets Manager access
+- IAM roles and policies for ESO
+- EKS clusters (if using EKS)
 
 ### Required Tools & Components
 - Kubernetes cluster with ArgoCD installed
@@ -128,44 +103,12 @@ To add a new addon to the solution:
 - kubectl and helm installed locally
 - External Secrets Operator (ESO) will be installed automatically
 
-### ArgoCD Requirements
-- ArgoCD version >= 2.4.0
-- ArgoCD Vault Plugin (AVP) installed and configured
-- ApplicationSet controller enabled
-
-### AWS Requirements
-- AWS Secrets Manager access
-- IAM roles and policies configured for ESO
-- EKS clusters (if using EKS)
-
 ## Installation
 
 ### 1. AWS Setup
 
-#### Create Required Secrets
-1. **Cluster Credentials**
-   Create a secret in AWS Secrets Manager for each cluster:
-   ```json
-   {
-     "clusterName": "demo-prod",
-     "host": "https://your-cluster-endpoint",
-     "caData": "your-cluster-ca-data",
-     "accountId": "your-aws-account-id",
-     "dd_tags": "env:prod,region:eu-west-1,project:demo"
-   }
-   ```
-
-2. **Datadog API Keys** (if using Datadog)
-   Create a secret at path `datadog-api-keys-integration`:
-   ```json
-   {
-     "demo-prod": "your-datadog-api-key-for-demo-prod",
-     "demo-staging": "your-datadog-api-key-for-demo-staging"
-   }
-   ```
-
 #### Configure IAM Role
-Create an IAM role for ESO with the following policy:
+Create an IAM role for ESO to access AWS Secrets Manager:
 ```json
 {
     "Version": "2012-10-17",
@@ -185,28 +128,35 @@ Create an IAM role for ESO with the following policy:
 }
 ```
 
-The IAM role ARN is configured in `values/iam-roles.yaml`:
+Specify the role ARN in `values/iam-roles.yaml`:
 ```yaml
 external-secrets:
   role: "arn:aws:iam::111111111111:role/external-secrets-argocd"
 ```
 
-This role is used by ESO to:
-- Fetch cluster credentials for ArgoCD cluster registration
-- Access Datadog API keys and tags configuration
+#### Required Secrets in AWS
+1. **Cluster Credentials**
+   Create a secret for each cluster:
+   ```json
+   {
+     "clusterName": "demo-prod",
+     "host": "https://your-cluster-endpoint",
+     "caData": "your-cluster-ca-data",
+     "accountId": "your-aws-account-id",
+     "dd_tags": "env:prod,region:eu-west-1,project:demo"
+   }
+   ```
 
-### External Secrets Installation
-ESO is installed first in the ArgoCD control plane cluster using a special environment:
-```yaml
-applicationsets:
-  - appName: external-secrets
-    environments:
-      - env: argocd-control-plane  # Special env for control plane installation
-        version: 0.9.10
-```
-This ensures ESO is available before registering remote clusters.
+2. **Datadog API Keys** (if using Datadog)
+   Create a secret at path `datadog-api-keys-integration`:
+   ```json
+   {
+     "demo-prod": "your-datadog-api-key-for-demo-prod",
+     "demo-staging": "your-datadog-api-key-for-demo-staging"
+   }
+   ```
 
-### 2. Configuration
+### 2. Solution Configuration
 
 1. **Define Clusters**
    Update `values/clusters.yaml`:
@@ -228,17 +178,6 @@ This ensures ESO is available before registering remote clusters.
            version: 0.9.10
          - env: dev
            version: 0.9.10
-     - appName: datadog
-       environments:
-         - env: dev
-           version: 3.25.3
-   ```
-
-3. **Set IAM Role**
-   Update `values/iam-roles.yaml`:
-   ```yaml
-   external-secrets:
-     role: "arn:aws:iam::111111111111:role/external-secrets-argocd"
    ```
 
 ### 3. Deploy
@@ -247,7 +186,59 @@ cd app-of-apps/cluster-addons
 helm template . | kubectl apply -f - -n argocd
 ```
 
-## Usage
+## Solution Components
+
+### ApplicationSet Configuration
+The solution uses ApplicationSets to dynamically manage addon deployments:
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: addon-name-environment
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            env: dev
+            addon-name: enabled
+  template:
+    spec:
+      source:
+        helm:
+          valueFiles:
+          - '$values/values/addons-values/clusters/{{name}}/addon-name.yaml'
+```
+
+### Value Management
+
+#### Configuration Layers
+The solution uses several configuration layers:
+1. `values/clusters.yaml`: Cluster definitions and labels
+2. `values/addons-values/defaults.yaml`: Base addon configurations
+3. `values/addons-values/clusters/<cluster>/`: Cluster-specific configurations
+
+#### Value Precedence
+Values are merged in this order:
+1. Cluster-specific configurations
+2. Environment-specific values from addons-list.yaml
+3. Default values from addons-values/defaults.yaml
+4. Chart default values
+
+### Datadog Integration
+
+The solution integrates with Datadog using two types of configurations:
+
+1. **API Keys**
+   - Fetched from AWS Secrets Manager
+   - Provided to Datadog agent via Kubernetes secrets
+
+2. **Cluster Tags**
+   - Retrieved from cluster AWS secret
+   - Configured via dd_tags field
+   - Applied to all Datadog telemetry
+
+## Usage Guide
 
 ### Managing Clusters
 
@@ -269,19 +260,6 @@ labels:
   keda: enabled
 ```
 
-### Cluster Registration
-Before attaching a cluster to ArgoCD:
-
-1. Create a corresponding secret in AWS Secret Manager with the cluster's name
-2. Include essential information:
-   - `clusterName`
-   - `host`
-   - `caData`
-   - `accountId`
-   - `dd_tags` (if using Datadog)
-
-_Note: Consider automating this with Terraform for production environments._
-
 ### Managing Addon Versions
 
 #### Default Versions
@@ -292,37 +270,22 @@ environments:
     version: 3.25.3  # Default version
 ```
 
-#### Cluster-Specific Versions
-Override versions using labels:
+#### Per-Cluster Versions
+Specify versions for specific clusters using labels:
 ```yaml
 labels:
   datadog: enabled
-  datadog-version: "3.70.7"  # Override version
+  datadog-version: "3.70.7"  # Cluster-specific version
 ```
 
 ### Cluster-Specific Configurations
-Create cluster-specific values in `values/addons-values/clusters/<cluster-name>/<addon>.yaml`:
+Create configurations in `values/addons-values/clusters/<cluster-name>/<addon>.yaml`:
 ```yaml
 datadog:
   logLevel: DEBUG
   additionalConfig:
     customTag: dev-environment
 ```
-
-### Datadog Configuration
-
-#### Tags Configuration
-Each cluster's AWS Secrets Manager secret must include a `dd_tags` key for proper Datadog tagging:
-```json
-{
-  "dd_tags": "env:prod,region:eu-west-1,project:demo"
-}
-```
-
-The `dd_tags` value should follow Datadog's tag format: `key1:value1,key2:value2`. Common tags include:
-- env: Environment name (prod, staging, dev)
-- region: AWS region or datacenter location
-- project: Project or team name
 
 ## Troubleshooting
 
@@ -342,98 +305,3 @@ The `dd_tags` value should follow Datadog's tag format: `key1:value1,key2:value2
    - Check addon version compatibility
    - Verify values file exists for cluster
    - Check for syntax errors in values files
-
-## Architecture
-
-### Components
-- **App of Apps**: Root application managing all addon deployments
-- **ApplicationSets**: Dynamic application generation per addon/environment
-- **External Secrets**: Secure management of cluster credentials and addon secrets
-- **Helm Charts**: Templated addon configurations
-
-### Directory Structure
-```
-├── app-of-apps/          # Root application
-├── charts/              # Helm charts
-│   ├── clusters/        # Cluster registration
-│   └── datadog-*/      # Addon specific charts
-└── values/              # Configuration
-    ├── addons-values/   # Addon configurations
-    ├── addons-list.yaml # Addon definitions
-    ├── clusters.yaml    # Cluster definitions
-    └── iam-roles.yaml   # IAM configuration
-```
-
-### ArgoCD Configuration Requirements
-
-#### ConfigMap Configuration
-ArgoCD needs to be configured with the Vault Plugin. Add the following to your `argocd-cm` ConfigMap:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: argocd-cm
-  namespace: argocd
-data:
-  configManagementPlugins: |
-    - name: argocd-vault-plugin-helm
-      init:
-        command: ["/bin/sh", "-c"]
-        args: ["helm dependency build"]
-      generate:
-        command: ["sh", "-c"]
-        args: ["helm template $ARGOCD_APP_NAME ${HELM_VALUES} . | argocd-vault-plugin generate -"]
-
-  # Optional: Configure cmp-server to use AVP
-  cmp.specs: |
-    - name: avp-helm
-      version: v1.0
-      allowConcurrency: true
-      discover:
-        find:
-          command: [sh, -c]
-          args: ["find . -name 'Chart.yaml' -o -name 'values.yaml'"]
-      generate:
-        command: [sh, -c]
-        args: ["helm template . | argocd-vault-plugin generate -"]
-```
-
-#### Plugin Installation
-The AVP plugin needs to be installed in the ArgoCD repo-server. Add this to your repo-server deployment:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: argocd-repo-server
-spec:
-  template:
-    spec:
-      containers:
-      - name: argocd-repo-server
-        volumeMounts:
-        - name: custom-tools
-          mountPath: /usr/local/bin/argocd-vault-plugin
-          subPath: argocd-vault-plugin
-      initContainers:
-      - name: download-tools
-        image: alpine:3.8
-        command: [sh, -c]
-        args:
-          - wget -O argocd-vault-plugin 
-            https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v1.x.x/argocd-vault-plugin_linux_amd64 &&
-            chmod +x argocd-vault-plugin &&
-            mv argocd-vault-plugin /custom-tools/
-        volumeMounts:
-          - mountPath: /custom-tools
-            name: custom-tools
-      volumes:
-      - name: custom-tools
-        emptyDir: {}
-```
-
-This configuration enables:
-- AVP plugin for Helm chart templating
-- Secret injection into Helm values
-- Integration with AWS Secrets Manager via AVP
