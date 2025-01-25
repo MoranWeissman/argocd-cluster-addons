@@ -2,6 +2,20 @@
 
 This solution provides a scalable way to manage addons across multiple clusters through ArgoCD. It utilizes ApplicationSets for dynamic addon deployment management, wrapped in an App of Apps pattern for the solution's components. The solution heavily leverages Helm templating for dynamic configuration generation.
 
+## Table of Contents
+- [Features](#features)
+- [Architecture](#architecture)
+  - [Components](#components)
+  - [Key Patterns](#key-patterns-used)
+- [How It Works](#how-it-works)
+  - [External Secrets Operator (ESO)](#external-secrets-operator)
+  - [ArgoCD Vault Plugin (AVP)](#argocd-vault-plugin)
+  - [Datadog Integration](#datadog-integration)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage Guide](#usage-guide)
+- [Troubleshooting](#troubleshooting)
+
 ## Features
 - Centralized addon management using ApplicationSets
 - Environment-based configuration through Helm templating
@@ -237,6 +251,85 @@ The solution integrates with Datadog using two types of configurations:
    - Retrieved from cluster AWS secret
    - Configured via dd_tags field
    - Applied to all Datadog telemetry
+
+#### Tags Configuration
+Each cluster's AWS Secrets Manager secret must include a `dd_tags` key:
+```json
+{
+  "dd_tags": "env:prod,region:eu-west-1,project:demo"
+}
+```
+
+The `dd_tags` value follows Datadog's tag format (`key1:value1,key2:value2`). Common tags include:
+- env: Environment name (prod, staging, dev)
+- region: AWS region or datacenter location
+- project: Project or team name
+
+These tags will be:
+- Automatically applied to all Datadog telemetry
+- Available for filtering and organizing in Datadog UI
+- Used for cost allocation and environment separation
+
+## How It Works
+
+### External Secrets Operator
+ESO is a Kubernetes operator that fetches secrets from external APIs and injects them as Kubernetes Secrets. In this solution:
+
+1. ESO is installed first in the control plane cluster
+2. It uses AWS IAM roles to authenticate with AWS Secrets Manager
+3. It creates two types of secrets:
+   - Cluster credentials for ArgoCD cluster registration
+   - Datadog API keys for monitoring
+
+Example flow:
+```
+AWS Secrets Manager -> ESO -> Kubernetes Secrets -> Used by Applications
+```
+
+### ArgoCD Vault Plugin
+AVP is a plugin that injects secrets during the ArgoCD sync process. In this solution:
+
+1. AVP runs during Helm template rendering
+2. It replaces special markers in YAML files with actual secrets
+3. Used primarily for:
+   - Injecting Datadog tags from cluster secrets
+   - Managing sensitive configuration values
+
+Example flow:
+```
+Helm Template -> AVP -> Rendered Manifests -> Applied by ArgoCD
+```
+
+### Datadog Integration
+Datadog is configured using multiple components:
+
+1. **API Keys**
+   - Stored in AWS Secrets Manager
+   - One key per cluster
+   - Fetched by ESO and mounted as Kubernetes secrets
+
+2. **Cluster Tags**
+   - Stored in cluster AWS secret as `dd_tags`
+   - Format: `key1:value1,key2:value2`
+   - Used for:
+     * Environment separation
+     * Cost allocation
+     * Metric filtering
+     * Alert routing
+
+Example `dd_tags`:
+```json
+{
+  "dd_tags": "env:prod,region:eu-west-1,project:demo,team:platform"
+}
+```
+
+These tags help organize and filter:
+- Metrics
+- Logs
+- Traces
+- Alerts
+- Dashboards
 
 ## Usage Guide
 
