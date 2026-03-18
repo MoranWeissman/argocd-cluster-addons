@@ -115,24 +115,18 @@ V2 is an evolution of the original open-source solution, battle-tested at enterp
 └── docs/                               # Documentation (optional)
 ```
 
-## Supported Addons
+## Addons
 
-| Addon | Chart Source | Description |
-|-------|-------------|-------------|
-| **Datadog** | helm.datadoghq.com | Monitoring & observability (multi-source with ExternalSecret) |
-| **KEDA** | kedacore.github.io | Kubernetes Event-Driven Autoscaling |
-| **External Secrets** | charts.external-secrets.io | Fetch secrets from AWS Secrets Manager |
-| **Istio** (base, istiod, cni, ingress) | istio-release.storage.googleapis.com | Service mesh (sync-wave ordered) |
-| **Kyverno** | kyverno.github.io | Policy engine (ServerSideApply) |
-| **Cert Manager** | charts.jetstack.io | TLS certificate management |
-| **Argo Rollouts** | argoproj.github.io | Progressive delivery |
-| **Argo Workflows** | argoproj.github.io | Workflow engine |
-| **Argo Events** | argoproj.github.io | Event-driven automation |
-| **External DNS** | kubernetes-sigs.github.io | DNS record management |
-| **Secrets Store CSI Driver** | kubernetes-sigs.github.io | Mount secrets as volumes |
-| **SSCDP AWS** | aws.github.io | AWS provider for Secrets Store CSI |
+This solution works with **any Helm chart** — just add an entry to `configuration/addons-catalog.yaml`. The repository includes pre-configured examples for common addons:
 
-Adding a new addon is as simple as adding an entry to `configuration/addons-catalog.yaml`.
+- **Datadog** — Multi-source pattern with ExternalSecret for API key
+- **KEDA** — Simple addon pattern
+- **External Secrets** — Multi-source with ClusterSecretStore
+- **Istio** (base, istiod, cni, ingress) — Sync-wave ordering pattern
+- **Kyverno** — ServerSideApply pattern
+- **Cert Manager**, **Argo Rollouts**, **External DNS** — Standard patterns
+
+These examples demonstrate different integration patterns. Use them as templates for your own addons.
 
 ## Prerequisites
 

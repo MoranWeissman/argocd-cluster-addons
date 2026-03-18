@@ -14,37 +14,26 @@
 # ================================================================ #
 
 applicationsets:
-  # Uses multi-source: Official Datadog chart + ExternalSecret for API key
+  # ---- Multi-source pattern: Helm chart + ExternalSecret for API key ---- #
   - appName: datadog
     repoURL: https://helm.datadoghq.com
     chart: datadog
     version: 3.160.1
 
+  # ---- Simple addon pattern ---- #
   - appName: keda
     repoURL: https://kedacore.github.io/charts
     chart: keda
     version: 2.14.2
 
+  # ---- Multi-source pattern: Helm chart + ClusterSecretStore ---- #
   - appName: external-secrets
     repoURL: https://charts.external-secrets.io
     chart: external-secrets
     version: 0.19.2
 
-  - appName: secrets-store-csi-driver
-    repoURL: https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
-    chart: secrets-store-csi-driver
-    namespace: kube-system
-    version: 1.5.0
-
-  - appName: sscdp-aws
-    repoURL: https://aws.github.io/secrets-store-csi-driver-provider-aws
-    chart: secrets-store-csi-driver-provider-aws
-    namespace: kube-system
-    version: 0.3.11
-
-# | -- Istio apps: istio-base, istiod, istio-cni, and istio-ingress -- |
-# | -- Sync waves ensure correct deployment order -- |
-
+  # ---- Sync-wave ordering pattern (multiple related charts) ---- #
+  # Istio components must deploy in order: base -> cni -> istiod -> ingress
   - appName: istio-base
     repoURL: https://istio-release.storage.googleapis.com/charts
     chart: base
@@ -69,38 +58,35 @@ applicationsets:
     version: 1.28.0
     namespace: istio-system
 
-# | -- End of Istio apps -- |
-
+  # ---- ServerSideApply pattern ---- #
   - appName: kyverno
     repoURL: https://kyverno.github.io/kyverno
     chart: kyverno
     version: 3.3.4
+
+  # ---- Standard addon patterns ---- #
+  - appName: cert-manager
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    version: 1.17.1
 
   - appName: argo-rollouts
     repoURL: https://argoproj.github.io/argo-helm
     chart: argo-rollouts
     version: 2.39.5
 
-  - appName: cert-manager
-    repoURL: https://charts.jetstack.io
-    chart: cert-manager
-    version: 1.17.1
-
-  - appName: argo-events
-    repoURL: https://argoproj.github.io/argo-helm
-    namespace: argo-workflows
-    chart: argo-events
-    version: 2.4.14
-
-  - appName: argo-workflows
-    repoURL: https://argoproj.github.io/argo-helm
-    chart: argo-workflows
-    version: 0.45.12
-
   - appName: external-dns
     repoURL: https://kubernetes-sigs.github.io/external-dns
     chart: external-dns
     version: 1.17.0
+
+  # ---- Add your own addons here ---- #
+  # Any Helm chart works. Just add an entry and enable via cluster labels.
+  # - appName: my-addon
+  #   repoURL: https://my-charts.example.com
+  #   chart: my-addon
+  #   version: 1.0.0
+  #   namespace: my-namespace  # Optional, defaults to appName
 
 # ================================================================ #
 # Migration / Adoption Mode Configuration (Optional)
