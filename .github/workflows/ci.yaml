@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML files
+        run: yamllint -c .yamllint.yaml .
+
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint bootstrap chart
+        run: helm lint bootstrap/ -f configuration/bootstrap-config.yaml -f configuration/addons-catalog.yaml -f configuration/cluster-addons.yaml -f configuration/datadog-project-mappings.yaml
+
+      - name: Lint sub-charts
+        run: |
+          for chart in charts/clusters charts/datadog-apikey charts/eso-configuration charts/karpenter-nodepools; do
+            echo "--- Linting $chart ---"
+            helm lint $chart/
+          done
+
+  helm-template:
+    name: Helm Template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Template bootstrap chart (AWS mode)
+        run: |
+          helm template cluster-addons-bootstrap bootstrap/ \
+            -f configuration/bootstrap-config.yaml \
+            -f configuration/addons-catalog.yaml \
+            -f configuration/cluster-addons.yaml \
+            -f configuration/datadog-project-mappings.yaml \
+            > /dev/null
+
+      - name: Template bootstrap chart (GCP mode)
+        run: |
+          helm template cluster-addons-bootstrap bootstrap/ \
+            -f configuration/bootstrap-config.yaml \
+            -f configuration/addons-catalog.yaml \
+            -f configuration/cluster-addons.yaml \
+            -f configuration/datadog-project-mappings.yaml \
+            --set bootstrap.cloudProvider=gcp \
+            --set bootstrap.gcp.projectID=test-project \
+            --set bootstrap.eso.serviceaccount.gcpServiceAccount=eso@test-project.iam.gserviceaccount.com \
+            > /dev/null
+
+  sensitive-data-check:
+    name: Sensitive Data Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for sensitive patterns
+        run: |
+          echo "Checking for sensitive data patterns..."
+          PATTERNS="merck|mahi|mahtl|ahtl|msd\.com"
+          if grep -riE "$PATTERNS" --include="*.yaml" --include="*.yml" --include="*.md" --include="*.sh" --include="*.tpl" .; then
+            echo "::error::Sensitive data patterns found! Please sanitize before merging."
+            exit 1
+          fi
+          echo "No sensitive patterns found."
+
+      - name: Check for real AWS account IDs (12 digits, not placeholders)
+        run: |
+          echo "Checking for non-placeholder AWS account IDs..."
+          # Find 12-digit numbers that aren't our known placeholders
+          if grep -rPo '\b[0-9]{12}\b' --include="*.yaml" --include="*.yml" --include="*.md" --include="*.sh" --include="*.tpl" . | grep -vE '111111111111|222222222222|123456789012'; then
+            echo "::error::Non-placeholder AWS account IDs found! Please use 111111111111 or 222222222222."
+            exit 1
+          fi
+          echo "No real account IDs found."

@@ -110,27 +110,27 @@ applicationsets:
 # another ArgoCD instance. See docs/ADDON-MIGRATION.md
 # ================================================================ #
 migrationIgnoreDifferences:
-- group: apps
-  kind: Deployment
-  jsonPointers:
-    - /spec/template
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+      - /spec/template
 
-- group: apps
-  kind: StatefulSet
-  jsonPointers:
-    - /spec/template
+  - group: apps
+    kind: StatefulSet
+    jsonPointers:
+      - /spec/template
 
-- group: apps
-  kind: DaemonSet
-  jsonPointers:
-    - /spec/template
+  - group: apps
+    kind: DaemonSet
+    jsonPointers:
+      - /spec/template
 
-- group: batch
-  kind: Job
-  jsonPointers:
-    - /spec/template
+  - group: batch
+    kind: Job
+    jsonPointers:
+      - /spec/template
 
-- group: batch
-  kind: CronJob
-  jsonPointers:
-    - /spec/jobTemplate/spec/template
+  - group: batch
+    kind: CronJob
+    jsonPointers:
+      - /spec/jobTemplate/spec/template
