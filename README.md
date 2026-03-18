@@ -1,4 +1,8 @@
-# ArgoCD Cluster Addons Management
+# ArgoCD Cluster Addons Management (V1 - Deprecated)
+
+> **This version is deprecated.** A complete rewrite (V2) is available on the [`main`](../../tree/main) branch with major improvements: data-driven ApplicationSets, ESO-only secrets, Git Files generator, multi-source apps, GKE support, 16+ addons, and more. See the [V1 to V2 migration guide](docs/MIGRATION-V1-TO-V2.md).
+>
+> This V1 code is preserved at the [`v1`](../../tree/v1) tag for reference.
 
 This solution provides a scalable way to manage addons across multiple clusters through ArgoCD. It utilizes ApplicationSets for dynamic addon deployment management, wrapped in an App of Apps pattern for the solution's components. The solution heavily leverages Helm templating for dynamic configuration generation.
 
