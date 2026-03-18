@@ -1,9 +1,18 @@
 # ESO configuration values
-# These are passed from eso.yaml as Helm valuesObject
+# These are passed from eso.yaml and addons-appset.yaml as Helm valuesObject
 
-# AWS region for Secrets Manager
+# Cloud provider: "aws" or "gcp"
+cloudProvider: "aws"
+
+# Region for secret store (AWS region or GCP location)
 secretManagerRegion: ""
 
-# ESO service account namespace
+# ESO service account namespace and name
 esoNamespace: ""
 esoServiceAccount: ""
+
+# --- GCP-only settings --- #
+# GCP project ID where secrets are stored
+gcpProjectID: ""
+# GKE cluster name (for Workload Identity)
+gkeClusterName: ""

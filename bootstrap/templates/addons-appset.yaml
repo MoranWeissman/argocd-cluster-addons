@@ -114,8 +114,8 @@ spec:
             {{- include "datadog.parameters" . | nindent 12 }}
             {{- end }}
             {{- if eq $appset.appName "external-secrets" }}
-            # Inject IRSA role ARN for ESO service account via helper function
-            {{- include "eso.valuesObject" . | nindent 12 }}
+            # Inject cloud-provider-specific service account annotation via helper function
+            {{- include "eso.valuesObject" $ | nindent 12 }}
             {{- end }}
             valueFiles:
             # global values file
@@ -129,9 +129,14 @@ spec:
           path: charts/eso-configuration
           helm:
             valuesObject:
+              cloudProvider: {{ $.Values.bootstrap.cloudProvider | default "aws" }}
               secretManagerRegion: '{{`{{.metadata.annotations.region}}`}}'
               esoNamespace: external-secrets
               esoServiceAccount: external-secrets
+              {{- if eq ($.Values.bootstrap.cloudProvider | default "aws") "gcp" }}
+              gcpProjectID: '{{`{{index .metadata.annotations "gcpProjectId"}}`}}'
+              gkeClusterName: '{{`{{.name}}`}}'
+              {{- end }}
         {{- end }}
         {{- if eq $appset.appName "datadog" }}
         # Source 2: Datadog API key ExternalSecret

@@ -1,6 +1,6 @@
 # ArgoCD Cluster Addons Management - V2
 
-A scalable, production-grade GitOps solution for managing Kubernetes addons across multiple clusters using ArgoCD ApplicationSets, External Secrets Operator, and Helm.
+A scalable, production-grade GitOps solution for managing Kubernetes addons across multiple clusters using ArgoCD ApplicationSets, External Secrets Operator, and Helm. Supports both **AWS (EKS)** and **GCP (GKE)** clusters.
 
 > **V2** is a complete rewrite of the [original V1 solution](#whats-new-in-v2). If you're looking for V1, see the [`v1` tag](../../tree/v1).
 
@@ -30,6 +30,7 @@ V2 is an evolution of the original open-source solution, battle-tested at enterp
 | **Datadog deployment** | 3 separate Applications (apikey, tags, agent) | 1 multi-source Application |
 | **Version overrides** | Per-environment only | Per-cluster via labels (`<addon>-version`) |
 | **Node scheduling** | Not supported | EKS Auto Mode / Karpenter NodePool support |
+| **Cloud providers** | AWS only | AWS (EKS) and GCP (GKE) |
 | **Addons supported** | 3 (ESO, Datadog, KEDA) | 16+ (Istio, Kyverno, Argo suite, Cert Manager, etc.) |
 | **Addon migration** | Not supported | Zero-downtime adoption mode (`inMigration`) |
 
@@ -139,10 +140,18 @@ Adding a new addon is as simple as adding an entry to `configuration/addons-cata
 - ArgoCD >= 2.9.0 (for ApplicationSet matrix generator + multi-source apps)
 - ApplicationSet controller enabled (default in ArgoCD >= 2.5)
 
-### AWS Requirements
+### Cloud Provider Requirements
+
+**AWS (EKS):**
 - AWS Secrets Manager access
 - IAM roles for IRSA (ESO, Datadog, KEDA, etc.)
 - EKS clusters with OIDC provider configured
+
+**GCP (GKE):**
+- GCP Secret Manager access
+- GCP service accounts with Workload Identity
+- GKE clusters with Workload Identity enabled
+- See [docs/GKE-SETUP.md](docs/GKE-SETUP.md) for full GCP setup guide
 
 ### Required Secrets in AWS Secrets Manager
 
@@ -374,6 +383,15 @@ For clusters running EKS Auto Mode:
 When migrating addons from another ArgoCD instance, set `inMigration: true` on the addon in `addons-catalog.yaml`. This injects `ignoreDifferences` rules that prevent pod restarts during adoption.
 
 See [docs/ADDON-MIGRATION.md](docs/ADDON-MIGRATION.md) for the full step-by-step runbook.
+
+### GKE (Google Cloud) Support
+
+Set `bootstrap.cloudProvider: gcp` in `bootstrap-config.yaml` to switch from AWS to GCP. This changes:
+- Secret store: GCP Secret Manager instead of AWS Secrets Manager
+- Auth: Workload Identity instead of IRSA
+- Cluster auth: `argocd-k8s-auth gcp` instead of `argocd-k8s-auth aws`
+
+See [docs/GKE-SETUP.md](docs/GKE-SETUP.md) for the full setup guide, Terraform examples, and IAM configuration.
 
 ### Custom Sync Waves
 

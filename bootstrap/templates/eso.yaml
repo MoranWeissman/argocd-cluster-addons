@@ -2,6 +2,7 @@
 # External Secrets Operator - Bootstrap Infrastructure
 # This deploys ESO to the ArgoCD control plane cluster for bootstrapping.
 # This is NOT a managed addon - it's part of the bootstrap process.
+# Supports both AWS (IRSA) and GCP (Workload Identity) authentication.
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -47,21 +48,28 @@ spec:
           {{- if .Values.bootstrap.eso.namespace }}
           namespaceOverride: {{ .Values.bootstrap.eso.namespace }}
           {{- end }}
-          {{- if .Values.bootstrap.eso.serviceaccount.name }}
           serviceAccount:
             name: {{ .Values.bootstrap.eso.serviceaccount.name }}
             annotations:
+              {{- if eq (.Values.bootstrap.cloudProvider | default "aws") "aws" }}
               eks.amazonaws.com/role-arn: {{ .Values.bootstrap.eso.serviceaccount.roleArn }}
-          {{- end }}
+              {{- else if eq .Values.bootstrap.cloudProvider "gcp" }}
+              iam.gke.io/gcp-service-account: {{ .Values.bootstrap.eso.serviceaccount.gcpServiceAccount }}
+              {{- end }}
     # Source 2: ESO configuration (ClusterSecretStore)
     - repoURL: {{ .Values.repoURL }}
       targetRevision: {{ .Values.targetRevision }}
       path: charts/eso-configuration
       helm:
         valuesObject:
+          cloudProvider: {{ .Values.bootstrap.cloudProvider | default "aws" }}
           secretManagerRegion: {{ .Values.bootstrap.region }}
           esoNamespace: {{ .Values.bootstrap.eso.namespace }}
           esoServiceAccount: {{ .Values.bootstrap.eso.serviceaccount.name }}
+          {{- if eq (.Values.bootstrap.cloudProvider | default "aws") "gcp" }}
+          gcpProjectID: {{ .Values.bootstrap.gcp.projectID }}
+          gkeClusterName: {{ .Values.hostCluster.name }}
+          {{- end }}
     # Source 3: Values reference
     - repoURL: {{ .Values.repoURL }}
       targetRevision: {{ .Values.targetRevision }}

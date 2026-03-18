@@ -4,6 +4,7 @@ Helper Functions for ApplicationSet Template
 ============================================================================
 These helpers generate Helm configuration blocks for addon deployments.
 Keeps the main appset template clean by extracting addon-specific logic.
+Supports both AWS (EKS) and GCP (GKE) cloud providers.
 */}}
 
 {{/*
@@ -23,8 +24,10 @@ parameters:
 
 {{/*
 Generate ESO valuesObject block.
-Injects IRSA role ARN for the ESO service account using cluster annotations.
-Convention: arn:aws:iam::<accountId>:role/EKS-ESO-<clusterName>
+Injects cloud-provider-specific service account annotations for ESO.
+
+AWS convention: arn:aws:iam::<accountId>:role/EKS-ESO-<clusterName>
+GCP convention: eso-<clusterName>@<projectId>.iam.gserviceaccount.com
 
 Usage: {{ include "eso.valuesObject" . | nindent 12 }}
 */}}
@@ -33,7 +36,11 @@ valuesObject:
   serviceAccount:
     name: external-secrets
     annotations:
+      {{- if eq (.Values.bootstrap.cloudProvider | default "aws") "aws" }}
       eks.amazonaws.com/role-arn: 'arn:aws:iam::{{`{{.metadata.annotations.accountId}}`}}:role/EKS-ESO-{{`{{.name}}`}}'
+      {{- else if eq .Values.bootstrap.cloudProvider "gcp" }}
+      iam.gke.io/gcp-service-account: 'eso-{{`{{.name}}`}}@{{`{{index .metadata.annotations "gcpProjectId"}}`}}.iam.gserviceaccount.com'
+      {{- end }}
 {{- end -}}
 
 {{/*

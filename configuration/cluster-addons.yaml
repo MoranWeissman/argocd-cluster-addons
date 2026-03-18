@@ -1,15 +1,16 @@
 # ================================================================ #
 # Clusters and Addons Management
 # ================================================================ #
-# Add or remove clusters and assign addons via labels
+# Add or remove clusters and assign addons via labels.
+# Supports both EKS (AWS) and GKE (GCP) clusters.
 #
 # Structure:
-#   - name: cluster-name              # Required: EKS cluster name
+#   - name: cluster-name              # Required: cluster name
 #     labels:                         # Required: addon assignments
 #       <addon-name>: enabled         # Enable addon with default version
 #       <addon-name>-version: "X.Y.Z" # Override addon version (optional)
 #
-# Note: AWS Secrets Manager secret name is automatically prefixed with "k8s-"
+# Note: Secret store secret name is automatically prefixed with "k8s-"
 #       Example: cluster name "my-cluster-dev" -> secret "k8s-my-cluster-dev"
 #
 # See docs/VALUES_GUIDE.md for detailed documentation
@@ -62,3 +63,16 @@ clusters:
   #     istiod: enabled
   #     istio-cni: enabled
   #     istio-ingress: enabled
+
+  # ================================================================ #
+  # GKE Clusters (when cloudProvider: gcp)
+  # ================================================================ #
+  # GKE clusters use GCP Secret Manager instead of AWS Secrets Manager.
+  # The same label-based addon enablement applies.
+  # See docs/GKE-SETUP.md for GCP-specific prerequisites.
+
+  # - name: my-gke-cluster-dev
+  #   labels:
+  #     keda: enabled
+  #     external-secrets: enabled
+  #     cert-manager: enabled

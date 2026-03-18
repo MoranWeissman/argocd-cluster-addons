@@ -17,7 +17,10 @@ hostCluster:
 
 # Bootstrap infrastructure configuration
 bootstrap:
-  # AWS region for ESO and cluster registration
+  # Cloud provider: "aws" or "gcp"
+  cloudProvider: aws
+
+  # Region for ESO and cluster registration
   region: eu-west-1
 
   # External Secrets Operator configuration
@@ -26,7 +29,18 @@ bootstrap:
     namespace: external-secrets
     serviceaccount:
       name: external-secrets
+
+      # --- AWS (EKS) --- #
+      # IRSA role ARN for ESO to access AWS Secrets Manager
       roleArn: "arn:aws:iam::111111111111:role/EKS-argocd-management-secret-manager"
+
+      # --- GCP (GKE) --- #
+      # GCP service account email for Workload Identity
+      # gcpServiceAccount: "external-secrets@my-gcp-project.iam.gserviceaccount.com"
+
+  # --- GCP-only settings --- #
+  # gcp:
+  #   projectID: my-gcp-project  # GCP project where secrets are stored
 
 # Application configuration (loaded from configuration files)
 appName: ""
