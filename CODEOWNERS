@@ -1,11 +1,2 @@
 # Default owners for the repository
-* @<your-github-username>
-
-# Bootstrap and core templates
-/bootstrap/ @<your-github-username>
-
-# Configuration changes
-/configuration/ @<your-github-username>
-
-# Charts
-/charts/ @<your-github-username>
+@MoranWeissman
