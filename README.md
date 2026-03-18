@@ -36,43 +36,58 @@ V2 is an evolution of the original open-source solution, battle-tested at enterp
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph GIT["Git Repository (this repo)"]
+        CFG["configuration/\ncluster-addons.yaml\naddons-catalog.yaml\nper-cluster values"]
+    end
+
+    subgraph MGMT["ArgoCD Management Cluster"]
+        ROOT["Root Application\ncluster-addons-bootstrap"]
+        ESO["External Secrets\nOperator"]
+        CSS["ClusterSecretStore"]
+        CLAPP["Clusters Application\nExternalSecrets"]
+        APPSETS["ApplicationSets\nMatrix Generator"]
+        NP["Karpenter NodePools\n(EKS Auto Mode)"]
+    end
+
+    subgraph SECRETS["Secret Store (AWS / GCP)"]
+        SM[("AWS Secrets Manager\nor GCP Secret Manager")]
+    end
+
+    subgraph REMOTE["Remote EKS / GKE Clusters"]
+        C1["Cluster 1\nDatadog · KEDA · Istio"]
+        C2["Cluster 2\nDatadog · ESO · Kyverno"]
+        C3["Cluster N\n..."]
+    end
+
+    subgraph HELM["Upstream Helm Repos"]
+        HR["helm.datadoghq.com\ncharts.external-secrets.io\nistio-release · kedacore\nargoproj · jetstack · ..."]
+    end
+
+    GIT ==>|"ArgoCD syncs"| ROOT
+    ROOT -->|"Wave -2"| ESO
+    ROOT -->|"Wave -2"| NP
+    ESO --> CSS
+    CSS -.->|"fetch credentials"| SM
+    ROOT -->|"Wave -1"| CLAPP
+    CLAPP -.->|"ExternalSecrets"| SM
+    ROOT -->|"Wave 0+"| APPSETS
+    APPSETS -.->|"Git Files generator\nreads cluster values"| GIT
+    APPSETS -->|"deploy addons"| C1
+    APPSETS -->|"deploy addons"| C2
+    APPSETS -->|"deploy addons"| C3
+    APPSETS -.->|"pull charts"| HR
 ```
-                         Git Repository (this repo)
-                                   |
-                          ArgoCD Management Cluster
-                     ┌─────────────┼─────────────┐
-                     │             │             │
-               [Sync Wave -2]  [Sync Wave -1]  [Sync Wave 0+]
-                  ESO          Clusters App     ApplicationSets
-                     │             │             │
-              ClusterSecretStore   │        ┌────┴────┐
-                     │        ExternalSecrets  Addon Apps
-              AWS Secrets Manager  │             │
-                     │        Cluster Secrets    │
-                     └─────────────┴─────────────┘
-                                   │
-                    ┌──────────────┼──────────────┐
-                    │              │              │
-               Remote Cluster  Remote Cluster  Remote Cluster
-               (Datadog, KEDA,  (Datadog,      (KEDA, ESO,
-                Istio, ...)     ESO, ...)       Kyverno, ...)
-```
 
-### Bootstrap Flow (Sync Wave Order)
+### Bootstrap Flow
 
-1. **Wave -2**: ESO deployed to management cluster + ClusterSecretStore created
-2. **Wave -2**: Karpenter NodePools deployed (if `eksAutoMode: "true"`)
-3. **Wave -1**: Cluster registration via ExternalSecrets from AWS Secrets Manager
-4. **Wave 0+**: ApplicationSets generate per-addon Applications for each matching cluster
-
-### Data Flow
-
-1. **Configuration in Git** — All config stored in this repository
-2. **Root Application syncs** — `cluster-addons-bootstrap` renders Helm templates
-3. **ESO fetches secrets** — Cluster credentials from AWS Secrets Manager
-4. **Clusters registered** — ExternalSecrets create ArgoCD cluster connection secrets
-5. **ApplicationSets generate** — Matrix generator (cluster + Git Files) creates Applications
-6. **Addons deploy** — Charts from external Helm repos with layered values
+| Wave | Component | What it does |
+|------|-----------|-------------|
+| **-2** | ESO + ClusterSecretStore | Deploys External Secrets Operator to management cluster |
+| **-2** | Karpenter NodePools | Creates infrastructure nodes (if `eksAutoMode: "true"`) |
+| **-1** | Clusters Application | Registers remote clusters via ExternalSecrets from secret store |
+| **0+** | ApplicationSets | Matrix generator (clusters + Git Files) creates per-addon Applications |
 
 ## Directory Structure
 
