@@ -1,0 +1,138 @@
+# =================================================================================== #
+# Global Values (used by all addons)
+# Define YAML anchors with & for reuse across addon configurations
+# =================================================================================== #
+clusterGlobalValues:
+  env: &env dev
+  clusterName: &clusterName my-app-dev
+  region: &region eu-west-1
+  projectName: my-app
+  accountId: 111111111111
+
+# ================================================================ #
+# ------------------- Datadog Configuration ------------------- #
+# ================================================================ #
+datadog:
+  datadog:
+    clusterName: *clusterName
+    containerIncludeLogs: 'kube_namespace:my-app'
+    apm:
+      portEnabled: true
+      instrumentation:
+        enabled: true
+        enabledNamespaces:
+          - my-app
+
+  # IRSA for Cluster Agent
+  clusterAgent:
+    rbac:
+      serviceAccountAnnotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::111111111111:role/Datadog-Agent-my-app-dev"
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+
+  # IRSA for Node Agents DaemonSet
+  agents:
+    rbac:
+      serviceAccountAnnotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::111111111111:role/Datadog-Agent-my-app-dev"
+
+# ================================================================ #
+# ------------------- External Secrets Configuration ------------------- #
+# ================================================================ #
+external-secrets:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::111111111111:role/EKS-ESO-my-app-dev"
+
+# ================================================================ #
+# ------------------- KEDA Configuration ------------------- #
+# ================================================================ #
+keda:
+  serviceAccount:
+    operator:
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::111111111111:role/keda-my-app-dev
+  operator:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 1000Mi
+
+# ================================================================ #
+# ------------------- Istio Configuration ------------------- #
+# ================================================================ #
+istio-base:
+  defaultRevision: "1-28-0"
+
+istiod:
+  pilot:
+    autoscaleMin: 2
+    autoscaleMax: 10
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2048Mi
+  global:
+    multiCluster:
+      clusterName: *clusterName
+
+istio-cni:
+  excludeNamespaces:
+    - kube-system
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+
+istio-ingress:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+# ================================================================ #
+# ------------------- Cert Manager Configuration ------------------- #
+# ================================================================ #
+cert-manager:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::111111111111:role/cert-manager-my-app-dev
+  dns01RecursiveNameservers: "8.8.8.8:53,1.1.1.1:53"
+  dns01RecursiveNameserversOnly: true
+
+# ================================================================ #
+# ------------------- Argo Rollouts Configuration ------------------- #
+# ================================================================ #
+argo-rollouts:
+  controller:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+    replicas: 2
+
+# ================================================================ #
+# ------------------- External DNS Configuration ------------------- #
+# ================================================================ #
+external-dns:
+  domainFilters:
+    - my-app-dev.example.com
+  txtOwnerId: "my-app-dev"
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::111111111111:role/external-dns-my-app-dev

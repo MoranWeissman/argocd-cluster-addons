@@ -1,0 +1,112 @@
+# ====================================================================== #
+# Datadog Global Values
+# ====================================================================== #
+# Chart: datadog
+# Repo: https://helm.datadoghq.com
+# Docs: https://docs.datadoghq.com/containers/kubernetes/installation
+#
+# These values apply to ALL clusters unless overridden per-cluster
+# in addons-clusters-values/<cluster-name>.yaml
+#
+# NOTE: API key is injected automatically via the datadog-apikey
+# ExternalSecret chart (multi-source). No need to set it here.
+# NOTE: Cluster name and dd_tags are injected per-cluster via
+# the datadog.parameters helper in the ApplicationSet template.
+# ====================================================================== #
+
+# Override chart name to avoid K8s 63-char limit on resource names
+fullnameOverride: "datadog"
+
+# ---- Core Agent Settings ---- #
+datadog:
+  logLevel: INFO
+  collectEvents: true
+
+  # ---- Log Collection ---- #
+  logs:
+    enabled: 'true'
+    containerCollectAll: 'true'
+    autoMultiLineDetection: 'true'
+
+  # ---- Live Kubernetes Resources ---- #
+  orchestratorExplorer:
+    enabled: true
+
+  # ---- APM / Tracing ---- #
+  # apm:
+  #   socketEnabled: true
+  #   portEnabled: false
+  #   instrumentation:
+  #     enabled: false
+
+  # ---- Process Monitoring ---- #
+  # processAgent:
+  #   enabled: true
+  #   processCollection: false
+
+  # ---- Network Performance Monitoring ---- #
+  # networkMonitoring:
+  #   enabled: false
+
+# ---- Cluster Agent ---- #
+clusterAgent:
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  # replicas: 1
+  # admissionController:
+  #   enabled: true
+  #   mutateUnlabelled: false
+
+# ---- Node Agent (DaemonSet) ---- #
+agents:
+  containers:
+    agent:
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          memory: 512Mi
+    traceAgent:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 500Mi
+    processAgent:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 512Mi
+
+# ====================================================================== #
+# Cluster-Specific Overrides Reference
+# ====================================================================== #
+# Copy the relevant sections below into your cluster values file:
+#   addons-clusters-values/<cluster-name>.yaml
+#
+# datadog:
+#   datadog:
+#     clusterName: <cluster-name>          # injected by ApplicationSet template
+#     containerIncludeLogs: 'kube_namespace:my-app'
+#     apm:
+#       portEnabled: true
+#       instrumentation:
+#         enabled: true
+#         enabledNamespaces:
+#           - my-app
+#   clusterAgent:
+#     rbac:
+#       serviceAccountAnnotations:
+#         eks.amazonaws.com/role-arn: "arn:aws:iam::<accountId>:role/Datadog-Agent-<project>"
+#   agents:
+#     rbac:
+#       serviceAccountAnnotations:
+#         eks.amazonaws.com/role-arn: "arn:aws:iam::<accountId>:role/Datadog-Agent-<project>"

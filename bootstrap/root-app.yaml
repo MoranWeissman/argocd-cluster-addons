@@ -1,0 +1,59 @@
+---
+# Root AppProject for cluster-addons bootstrap
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: cluster-addons
+  namespace: argocd
+spec:
+  description: Bootstrap project for cluster addons management
+  sourceRepos:
+    - '*'
+  sourceNamespaces:
+    - argocd
+  destinations:
+    - namespace: '*'
+      server: '*'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+---
+# Root Application - bootstraps the cluster addons bootstrap chart
+# This creates ApplicationSets, ESO, and cluster registration
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-addons-bootstrap
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: cluster-addons-bootstrap
+    app.kubernetes.io/component: bootstrap
+    app-type: infrastructure
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: cluster-addons
+  sources:
+    # Bootstrap Helm chart
+    - repoURL: https://github.com/<your-org>/argocd-cluster-addons.git
+      targetRevision: main
+      path: bootstrap
+      helm:
+        valueFiles:
+          - $values/configuration/bootstrap-config.yaml
+          - $values/configuration/addons-catalog.yaml
+          - $values/configuration/cluster-addons.yaml
+          - $values/configuration/datadog-project-mappings.yaml
+    # Values repo reference
+    - repoURL: https://github.com/<your-org>/argocd-cluster-addons.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

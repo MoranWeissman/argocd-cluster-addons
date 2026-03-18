@@ -1,0 +1,3 @@
+# Istio Base - CRDs and cluster-wide resources
+# Deployed at sync-wave -1 (before istiod)
+defaultRevision: default

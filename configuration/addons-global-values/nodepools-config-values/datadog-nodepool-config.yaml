@@ -1,0 +1,25 @@
+# ---- Datadog EKS Auto Mode infra-karpenter Overrides ---- #
+#
+# IMPORTANT: Datadog agent DaemonSet is an EXCEPTION to the infrastructure-node pattern.
+# Unlike other addons, the agent DaemonSet must run on ALL nodes (not just infrastructure)
+# because it collects logs and metrics from pods on every node.
+#
+# Components and their scheduling:
+#   agents (DaemonSet)   -> ALL nodes (no nodeSelector, only toleration)
+#   clusterAgent         -> infrastructure nodes only (nodeSelector + toleration)
+
+agents:
+  tolerations:
+    - key: infrastructure
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
+clusterAgent:
+  nodeSelector:
+    node-type: infrastructure
+  tolerations:
+    - key: infrastructure
+      operator: Equal
+      value: "true"
+      effect: NoSchedule

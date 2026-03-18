@@ -1,0 +1,5 @@
+apiVersion: v2
+name: karpenter-nodepools
+description: Helm chart for managing Karpenter NodePools on EKS Auto Mode clusters
+version: 1.0.0
+type: application

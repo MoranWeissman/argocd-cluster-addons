@@ -1,0 +1,9 @@
+# ESO configuration values
+# These are passed from eso.yaml as Helm valuesObject
+
+# AWS region for Secrets Manager
+secretManagerRegion: ""
+
+# ESO service account namespace
+esoNamespace: ""
+esoServiceAccount: ""

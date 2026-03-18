@@ -1,0 +1,41 @@
+---
+# Cluster Registration - Creates ArgoCD cluster secrets via ESO
+# Depends on ESO being deployed first (sync-wave -2)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: clusters
+  namespace: argocd
+  labels:
+    cluster-name: {{ .Values.hostCluster.name }}
+    app-type: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"  # Deploy after ESO, before addons
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: cluster-addons
+  sources:
+    # Clusters chart (creates ESO ExternalSecrets)
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      path: charts/clusters
+      helm:
+        valueFiles:
+          - $values/configuration/bootstrap-config.yaml
+          - $values/configuration/cluster-addons.yaml
+          - $values/configuration/datadog-project-mappings.yaml
+        ignoreMissingValueFiles: true
+    # Values repo reference
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

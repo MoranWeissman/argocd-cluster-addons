@@ -1,0 +1,64 @@
+# ================================================================ #
+# Clusters and Addons Management
+# ================================================================ #
+# Add or remove clusters and assign addons via labels
+#
+# Structure:
+#   - name: cluster-name              # Required: EKS cluster name
+#     labels:                         # Required: addon assignments
+#       <addon-name>: enabled         # Enable addon with default version
+#       <addon-name>-version: "X.Y.Z" # Override addon version (optional)
+#
+# Note: AWS Secrets Manager secret name is automatically prefixed with "k8s-"
+#       Example: cluster name "my-cluster-dev" -> secret "k8s-my-cluster-dev"
+#
+# See docs/VALUES_GUIDE.md for detailed documentation
+# ================================================================ #
+
+clusters:
+
+  # ================================================================ #
+  # ArgoCD Management Cluster (host)
+  # ================================================================ #
+  # ESO is managed by bootstrap eso.yaml on this cluster
+  - name: argocd-management-cluster
+    labels:
+      datadog: enabled
+
+  # ================================================================ #
+  # Development Clusters
+  # ================================================================ #
+
+  - name: my-app-dev
+    labels:
+      datadog: enabled
+      keda: enabled
+      external-secrets: enabled
+      istio-base: enabled
+      istiod: enabled
+      istio-cni: enabled
+      istio-ingress: enabled
+      argo-rollouts: enabled
+      cert-manager: enabled
+      external-dns: enabled
+      # eksAutoMode: "true"  # Uncomment to enable Karpenter NodePools
+
+  - name: my-app-staging
+    labels:
+      datadog: enabled
+      keda: enabled
+      external-secrets: enabled
+
+  # ================================================================ #
+  # Production Clusters
+  # ================================================================ #
+
+  # - name: my-app-prod
+  #   labels:
+  #     datadog: enabled
+  #     keda: enabled
+  #     external-secrets: enabled
+  #     istio-base: enabled
+  #     istiod: enabled
+  #     istio-cni: enabled
+  #     istio-ingress: enabled

@@ -1,0 +1,40 @@
+# ================================================================ #
+# Datadog API Key Project Name Mappings
+# ================================================================ #
+# This file maps cluster names to their Datadog project names and environments
+# for API key lookups in AWS Secrets Manager.
+#
+# Purpose: Datadog API keys are stored in AWS Secrets Manager secret
+# "datadog-api-keys-integration" with JSON properties following the pattern:
+#   {
+#     "<projectName>-<env>": "dd-api-key-value",
+#     "my-app-dev": "...",
+#     ...
+#   }
+#
+# How it works:
+# 1. Each cluster values file sets clusterGlobalValues.projectName and
+#    clusterGlobalValues.env
+# 2. The datadog-apikey chart uses these values to construct the property
+#    name: "{projectName}-{env}"
+# 3. An ExternalSecret fetches the API key from AWS Secrets Manager
+# 4. Datadog reads the API key from the resulting K8s secret
+#
+# When adding a new cluster:
+# 1. Set clusterGlobalValues.projectName and env in the cluster values file
+# 2. Ensure AWS Secrets Manager secret "datadog-api-keys-integration" contains
+#    a JSON property: "<projectName>-<env>": "api-key-value"
+# ================================================================ #
+
+datadogProjectMappings:
+  argocd-management-cluster:
+    projectName: devops
+    env: dev
+
+  my-app-dev:
+    projectName: my-app
+    env: dev
+
+  my-app-staging:
+    projectName: my-app
+    env: staging

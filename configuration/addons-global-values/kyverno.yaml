@@ -1,0 +1,15 @@
+# ====================================================================== #
+# Kyverno Global Values
+# ====================================================================== #
+admissionController:
+  replicas: 2
+  container:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+features:
+  logging:
+    format: json

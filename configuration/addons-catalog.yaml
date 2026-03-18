@@ -1,0 +1,136 @@
+# ================================================================ #
+# Addons Catalog - Available Helm Charts
+# ================================================================ #
+# See docs/VALUES_GUIDE.md for full documentation
+#
+# Example:
+#   - appName: keda                    # Required: addon name
+#     repoURL: https://kedacore.io     # Required: Helm repo
+#     chart: keda                      # Required: chart name
+#     version: 2.14.2                  # Required: version
+#     namespace: kube-system           # Optional: custom namespace (defaults to appName)
+#     ignoreDifferences: []            # Optional: ArgoCD ignore rules
+#     inMigration: false               # Optional: enable migration mode (see docs/ADDON-MIGRATION.md)
+# ================================================================ #
+
+applicationsets:
+  # Uses multi-source: Official Datadog chart + ExternalSecret for API key
+  - appName: datadog
+    repoURL: https://helm.datadoghq.com
+    chart: datadog
+    version: 3.160.1
+
+  - appName: keda
+    repoURL: https://kedacore.github.io/charts
+    chart: keda
+    version: 2.14.2
+
+  - appName: external-secrets
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    version: 0.19.2
+
+  - appName: secrets-store-csi-driver
+    repoURL: https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+    chart: secrets-store-csi-driver
+    namespace: kube-system
+    version: 1.5.0
+
+  - appName: sscdp-aws
+    repoURL: https://aws.github.io/secrets-store-csi-driver-provider-aws
+    chart: secrets-store-csi-driver-provider-aws
+    namespace: kube-system
+    version: 0.3.11
+
+# | -- Istio apps: istio-base, istiod, istio-cni, and istio-ingress -- |
+# | -- Sync waves ensure correct deployment order -- |
+
+  - appName: istio-base
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: base
+    version: 1.28.0
+    namespace: istio-system
+
+  - appName: istiod
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: istiod
+    version: 1.28.0
+    namespace: istio-system
+
+  - appName: istio-cni
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: cni
+    version: 1.28.0
+    namespace: istio-system
+
+  - appName: istio-ingress
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: gateway
+    version: 1.28.0
+    namespace: istio-system
+
+# | -- End of Istio apps -- |
+
+  - appName: kyverno
+    repoURL: https://kyverno.github.io/kyverno
+    chart: kyverno
+    version: 3.3.4
+
+  - appName: argo-rollouts
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-rollouts
+    version: 2.39.5
+
+  - appName: cert-manager
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    version: 1.17.1
+
+  - appName: argo-events
+    repoURL: https://argoproj.github.io/argo-helm
+    namespace: argo-workflows
+    chart: argo-events
+    version: 2.4.14
+
+  - appName: argo-workflows
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-workflows
+    version: 0.45.12
+
+  - appName: external-dns
+    repoURL: https://kubernetes-sigs.github.io/external-dns
+    chart: external-dns
+    version: 1.17.0
+
+# ================================================================ #
+# Migration / Adoption Mode Configuration (Optional)
+# ================================================================ #
+# Enable inMigration: true on specific addons to inject these
+# ignoreDifferences rules during zero-downtime migration from
+# another ArgoCD instance. See docs/ADDON-MIGRATION.md
+# ================================================================ #
+migrationIgnoreDifferences:
+- group: apps
+  kind: Deployment
+  jsonPointers:
+    - /spec/template
+
+- group: apps
+  kind: StatefulSet
+  jsonPointers:
+    - /spec/template
+
+- group: apps
+  kind: DaemonSet
+  jsonPointers:
+    - /spec/template
+
+- group: batch
+  kind: Job
+  jsonPointers:
+    - /spec/template
+
+- group: batch
+  kind: CronJob
+  jsonPointers:
+    - /spec/jobTemplate/spec/template

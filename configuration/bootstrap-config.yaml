@@ -1,0 +1,35 @@
+# ================================================================ #
+# Bootstrap Configuration
+# These values configure the bootstrap infrastructure
+# ================================================================ #
+
+# Git repository URL and revision
+# Note: Use .git suffix for consistency with ArgoCD best practices
+repoURL: 'https://github.com/<your-org>/argocd-cluster-addons.git'
+# targetRevision: Branch, tag, or commit to track (HEAD tracks default branch)
+targetRevision: main
+githubUsername: <your-github-username>
+
+# Host cluster configuration
+# This is the cluster where ArgoCD itself is running
+hostCluster:
+  name: argocd-management-cluster
+
+# Bootstrap infrastructure configuration
+bootstrap:
+  # AWS region for ESO and cluster registration
+  region: eu-west-1
+
+  # External Secrets Operator configuration
+  eso:
+    version: 0.16.2  # Last v0.16.x - supports both v1beta1 and v1 APIs
+    namespace: external-secrets
+    serviceaccount:
+      name: external-secrets
+      roleArn: "arn:aws:iam::111111111111:role/EKS-argocd-management-secret-manager"
+
+# Application configuration (loaded from configuration files)
+appName: ""
+applicationsets: []
+addonsConfig: {}
+clusters: []

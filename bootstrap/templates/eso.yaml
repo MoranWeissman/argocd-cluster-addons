@@ -1,0 +1,78 @@
+---
+# External Secrets Operator - Bootstrap Infrastructure
+# This deploys ESO to the ArgoCD control plane cluster for bootstrapping.
+# This is NOT a managed addon - it's part of the bootstrap process.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: external-secrets-operator
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-operator
+  namespace: argocd
+  labels:
+    cluster-name: {{ .Values.hostCluster.name }}
+    app-type: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"  # Install before cluster registration
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: external-secrets-operator
+  sources:
+    # Source 1: ESO Helm chart
+    - repoURL: https://charts.external-secrets.io
+      targetRevision: {{ .Values.bootstrap.eso.version }}
+      chart: external-secrets
+      helm:
+        # Use fixed release name to prevent resource recreation on Application rename
+        releaseName: external-secrets-bootstrap
+        valuesObject:
+          # Bootstrap-specific ESO configuration (from bootstrap-config.yaml only)
+          {{- if .Values.bootstrap.eso.namespace }}
+          namespaceOverride: {{ .Values.bootstrap.eso.namespace }}
+          {{- end }}
+          {{- if .Values.bootstrap.eso.serviceaccount.name }}
+          serviceAccount:
+            name: {{ .Values.bootstrap.eso.serviceaccount.name }}
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.bootstrap.eso.serviceaccount.roleArn }}
+          {{- end }}
+    # Source 2: ESO configuration (ClusterSecretStore)
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      path: charts/eso-configuration
+      helm:
+        valuesObject:
+          secretManagerRegion: {{ .Values.bootstrap.region }}
+          esoNamespace: {{ .Values.bootstrap.eso.namespace }}
+          esoServiceAccount: {{ .Values.bootstrap.eso.serviceaccount.name }}
+    # Source 3: Values reference
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      ref: values
+  destination:
+    # Deploy to ArgoCD's own cluster (in-cluster)
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.bootstrap.eso.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

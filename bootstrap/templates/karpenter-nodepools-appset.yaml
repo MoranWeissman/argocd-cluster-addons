@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: karpenter-nodepools
+  namespace: argocd
+spec:
+  clusterResourceBlacklist:
+  - group: ""
+    kind: ""
+  - group: ""
+    kind: ""
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+---
+# NodePools ApplicationSet - Deploys Karpenter NodePools for EKS Auto Mode clusters
+# Only creates Applications for clusters with eksAutoMode: "true" label
+# Sync wave -2 ensures NodePools exist before any addons deploy
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: karpenter-nodepools
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=zero"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster
+            eksAutoMode: "true"
+  template:
+    metadata:
+      name: 'karpenter-nodepools-{{`{{.name}}`}}'
+      labels:
+        cluster-name: '{{`{{.name}}`}}'
+        app-type: infrastructure
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"  # Deploy before all addons
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: karpenter-nodepools
+      sources:
+        # Karpenter NodePool chart
+        - repoURL: {{ .Values.repoURL }}
+          targetRevision: {{ .Values.targetRevision }}
+          path: charts/karpenter-nodepools
+          helm:
+            valueFiles:
+              - $values/configuration/karpenter-nodepools-config.yaml
+            ignoreMissingValueFiles: true
+        # Values repo reference
+        - repoURL: {{ .Values.repoURL }}
+          targetRevision: {{ .Values.targetRevision }}
+          ref: values
+      destination:
+        # If deploying to the host cluster (ArgoCD management cluster) use in-cluster, otherwise use the cluster name for remote deployment
+        name: '{{`{{- if eq .name "`}}{{ .Values.hostCluster.name }}{{`" }}in-cluster{{- else }}{{.name}}{{- end }}`}}'
+        namespace: karpenter
+      syncPolicy:
+        automated:
+          prune: true
+        syncOptions:
+          - CreateNamespace=true

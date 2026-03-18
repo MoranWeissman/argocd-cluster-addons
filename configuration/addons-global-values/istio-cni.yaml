@@ -1,0 +1,9 @@
+# Istio CNI Plugin
+# Deployed at sync-wave 0 (after istio-base, before istiod)
+cni:
+  excludeNamespaces:
+    - kube-system
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
