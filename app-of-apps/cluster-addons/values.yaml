@@ -1,5 +1,0 @@
-appName: ""
-applicationsets: []
-addonsConfig: {}
-clusters: []
-repoURL: 'https://github.com/MoranWeissman/argocd-cluster-addons'

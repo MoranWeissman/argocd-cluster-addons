@@ -1,0 +1,91 @@
+{{- /*
+NodePool Template for Karpenter v1
+Supports all NodePool features including static/dynamic modes, disruption policies, and comprehensive configuration
+*/ -}}
+{{- range .Values.nodepools }}
+---
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ .name | required "NodePool name is required" }}
+  namespace: {{ .namespace | default "karpenter" }}
+
+spec:
+  {{- /*
+  Static NodePool mode - when replicas is set, maintains fixed number of nodes
+  Note: weight cannot be used when replicas is specified
+  */ -}}
+  {{- if .replicas }}
+  replicas: {{ .replicas }}
+  {{- end }}
+
+  # Template describing how nodes created by this NodePool should look
+  template:
+    metadata:
+      {{- if .template.metadata.labels }}
+      labels:
+        {{- toYaml .template.metadata.labels | nindent 8 }}
+      {{- end }}
+      {{- if .template.metadata.annotations }}
+      annotations:
+        {{- toYaml .template.metadata.annotations | nindent 8 }}
+      {{- end }}
+
+    spec:
+      # Reference to the cloud-provider-specific NodeClass
+      nodeClassRef:
+        {{- if .template.spec.nodeClassRef }}
+        {{- toYaml .template.spec.nodeClassRef | nindent 8 }}
+        {{- else }}
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: default
+        {{- end }}
+
+      {{- with .template.spec.taints }}
+      taints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .template.spec.startupTaints }}
+      startupTaints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- if .template.spec.expireAfter }}
+      expireAfter: {{ .template.spec.expireAfter }}
+      {{- end }}
+
+      {{- if .template.spec.terminationGracePeriod }}
+      terminationGracePeriod: {{ .template.spec.terminationGracePeriod }}
+      {{- end }}
+
+      {{- with .template.spec.requirements }}
+      requirements:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+  {{- with .disruption }}
+  disruption:
+    {{- if .consolidationPolicy }}
+    consolidationPolicy: {{ .consolidationPolicy }}
+    {{- end }}
+    {{- if .consolidateAfter }}
+    consolidateAfter: {{ .consolidateAfter }}
+    {{- end }}
+    {{- with .budgets }}
+    budgets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  {{- with .limits }}
+  limits:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if and .weight (not .replicas) }}
+  weight: {{ .weight }}
+  {{- end }}
+
+{{- end }}

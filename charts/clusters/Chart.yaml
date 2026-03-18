@@ -1,4 +1,4 @@
 apiVersion: v2
 name: remote-clusters
-description: A Helm chart for Kubernetes
+description: Creates ExternalSecrets for remote cluster registration with ArgoCD
 version: 0.1.0

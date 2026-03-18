@@ -1,0 +1,10 @@
+# Secrets Store CSI Driver Provider AWS Global Values
+resources:
+  requests:
+    cpu: 50m
+    memory: 100Mi
+  limits:
+    cpu: 100m
+    memory: 200Mi
+tolerations: []
+kubeletPath: /var/lib/kubelet

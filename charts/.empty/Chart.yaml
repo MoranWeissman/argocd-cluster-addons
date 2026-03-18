@@ -1,0 +1,4 @@
+apiVersion: v2
+name: empty
+version: 0.1.0
+description: Empty chart that renders no resources - used for conditional source paths

@@ -1,0 +1,51 @@
+# ================================================================ #
+# Karpenter NodePool Configuration (EKS Auto Mode)
+# ================================================================ #
+# NodePools are deployed only to clusters with eksAutoMode: "true" label
+# The karpenter-nodepools ApplicationSet (sync-wave -2) creates these NodePools
+# before any addons deploy, ensuring infrastructure nodes are available
+# ================================================================ #
+#
+# Reference: https://docs.aws.amazon.com/eks/latest/userguide/create-node-pool.html
+# ================================================================ #
+nodepools:
+  - name: infra-karpenter-nodepool
+    # Template describes how nodes created by this NodePool should look
+    template:
+      metadata:
+        # Labels applied to every node created by this NodePool
+        labels:
+          node-type: infrastructure
+      spec:
+        # Reference to EC2NodeClass for EKS Auto Mode
+        nodeClassRef:
+          group: eks.amazonaws.com
+          kind: NodeClass
+          name: default
+        # Taints applied to provisioned nodes
+        # Pods must tolerate these taints to schedule on infrastructure nodes
+        taints:
+          - key: infrastructure
+            effect: NoSchedule
+            value: "true"
+        # Requirements that constrain provisioned nodes
+        requirements:
+          - key: node-type
+            operator: In
+            values: ["infrastructure"]
+          # Instance category selection (c=compute, m=general, r=memory)
+          - key: eks.amazonaws.com/instance-category
+            operator: In
+            values: ["c", "m", "r"]
+        # Node lifecycle management
+        expireAfter: 336h # 14 days
+        terminationGracePeriod: 48h
+    # Disruption configuration for controlled scale-down
+    disruption:
+      consolidationPolicy: WhenEmptyOrUnderutilized
+      consolidateAfter: 30s
+    # Resource limits to prevent unbounded scale-out
+    limits:
+      cpu: "1000"
+      memory: 1000Gi
+      nodes: 10

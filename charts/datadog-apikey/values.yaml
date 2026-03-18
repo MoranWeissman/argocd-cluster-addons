@@ -1,0 +1,8 @@
+clusterGlobalValues:
+  clusterName: ""
+  env: ""
+  projectName: ""  # Defaults to clusterName if empty
+
+secretStore:
+  name: global-secret-store
+  kind: ClusterSecretStore

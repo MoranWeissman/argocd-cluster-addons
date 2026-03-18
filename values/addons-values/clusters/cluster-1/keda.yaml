@@ -1,7 +1,0 @@
-  # ===============================
-  # Cluster-specific configurations
-  # ===============================
-
-serviceAccount:
-  annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::111111111111:role/cluster-1-sa-keda-dev"

@@ -1,0 +1,44 @@
+# =================================================================================== #
+# Global Values (used by all addons)
+# =================================================================================== #
+clusterGlobalValues:
+  env: &env staging
+  clusterName: &clusterName my-app-staging
+  region: &region eu-west-1
+  projectName: my-app
+  accountId: 222222222222
+
+# ================================================================ #
+# ------------------- Datadog Configuration ------------------- #
+# ================================================================ #
+datadog:
+  datadog:
+    clusterName: *clusterName
+    containerIncludeLogs: 'kube_namespace:my-app'
+
+  clusterAgent:
+    rbac:
+      serviceAccountAnnotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::222222222222:role/Datadog-Agent-my-app-staging"
+
+  agents:
+    rbac:
+      serviceAccountAnnotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::222222222222:role/Datadog-Agent-my-app-staging"
+
+# ================================================================ #
+# ------------------- External Secrets Configuration ------------------- #
+# ================================================================ #
+external-secrets:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::222222222222:role/EKS-ESO-my-app-staging"
+
+# ================================================================ #
+# ------------------- KEDA Configuration ------------------- #
+# ================================================================ #
+keda:
+  serviceAccount:
+    operator:
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::222222222222:role/keda-my-app-staging

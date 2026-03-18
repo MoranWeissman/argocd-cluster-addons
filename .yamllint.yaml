@@ -1,0 +1,27 @@
+---
+extends: default
+
+rules:
+  # Helm templates use {{ }} which breaks YAML parsing
+  # Only lint pure YAML files, not templates
+  truthy:
+    check-keys: false
+  line-length:
+    max: 200
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  comments:
+    min-spaces-from-content: 1
+  document-start: disable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+
+ignore: |
+  # Helm templates contain Go template syntax that yamllint can't parse
+  bootstrap/templates/
+  bootstrap/repository-secret.yaml
+  charts/*/templates/
+  # Node modules, git, etc.
+  .git/
+  node_modules/

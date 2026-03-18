@@ -1,0 +1,21 @@
+# AI Assistant Folders
+.serena/*
+.claude/*
+.cursor/
+.copilot/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*~

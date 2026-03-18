@@ -1,0 +1,8 @@
+# ---- Cert Manager EKS Auto Mode infra-karpenter Overrides ---- #
+nodeSelector:
+  node-type: infrastructure
+tolerations:
+  - key: infrastructure
+    operator: Equal
+    value: "true"
+    effect: NoSchedule

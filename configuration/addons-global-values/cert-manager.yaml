@@ -1,0 +1,12 @@
+# ====================================================================== #
+# Cert Manager Global Values
+# ====================================================================== #
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi
+dns01RecursiveNameservers: "8.8.8.8:53,1.1.1.1:53"
+dns01RecursiveNameserversOnly: true
+installCRDs: true

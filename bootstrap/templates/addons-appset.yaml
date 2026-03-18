@@ -1,0 +1,180 @@
+# ----------------------------------------------------------------------------------------------------
+# Important Notes:
+# - This template is used to deploy the addons to the clusters
+# - It uses the ApplicationSet generator to deploy the addons to the clusters
+# - It uses the Git generator to read the cluster values file for the matched clusters
+# - It uses the valuesObject to merge the cluster-specific values from the Git generator
+# - It uses the helper functions to merge the cluster-specific values from the Git generator
+# ----------------------------------------------------------------------------------------------------
+
+{{- range $index, $applicationSet := .Values.applicationsets }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ $applicationSet.appName }}
+  namespace: argocd
+spec:
+  clusterResourceBlacklist:
+  - group: ""
+    kind: ""
+  - group: ""
+    kind: ""
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+---
+{{- end }}
+
+{{- range $index, $appset := .Values.applicationsets }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ $appset.appName }}
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=zero"]
+  generators:
+    - matrix:
+        generators:
+          # Find clusters with this addon enabled
+          - clusters:
+              selector:
+                matchLabels:
+                  argocd.argoproj.io/secret-type: cluster
+                  {{ $appset.appName }}: enabled
+              values:
+                revision: '{{ $appset.version }}'
+                app: '{{ $appset.appName }}'
+          # Read cluster values file for matched clusters
+          - git:
+              repoURL: {{ $.Values.repoURL }}
+              revision: {{ $.Values.targetRevision }}
+              files:
+                - path: "configuration/addons-clusters-values/{{`{{.name}}`}}.yaml"
+  template:
+    metadata:
+      name: '{{ $appset.appName }}-{{`{{.name}}`}}'
+      labels:
+        cluster-name: '{{`{{.name}}`}}'
+        app-type: addon
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+      # Set sync wave for addons that require specific deployment order
+      {{- if or (eq $appset.appName "istio-base") (eq $appset.appName "istio-cni") (eq $appset.appName "istiod") (eq $appset.appName "istio-ingress") (eq $appset.appName "datadog") (eq $appset.appName "external-secrets") }}
+      annotations:
+        {{- if eq $appset.appName "istio-base" }}
+        argocd.argoproj.io/sync-wave: "-1"
+        {{- else if eq $appset.appName "istio-cni" }}
+        argocd.argoproj.io/sync-wave: "0"
+        {{- else if eq $appset.appName "istiod" }}
+        argocd.argoproj.io/sync-wave: "1"
+        {{- else if eq $appset.appName "istio-ingress" }}
+        argocd.argoproj.io/sync-wave: "2"
+        {{- else if eq $appset.appName "external-secrets" }}
+        argocd.argoproj.io/sync-wave: "-2"
+        {{- else if eq $appset.appName "datadog" }}
+        argocd.argoproj.io/sync-wave: "1"
+        {{- end }}
+      {{- end }}
+    spec:
+      project: {{ $appset.appName }}
+      sources:
+        # Source 1: Main addon Helm chart
+        - repoURL: {{ $appset.repoURL }}
+          targetRevision: '{{`{{default .values.revision (index .metadata.labels (print .values.app "-version"))}}`}}'
+          # If Helm chart is local, use path: charts/<addon-name> (relative to this repository)
+          {{- if $appset.path }}
+          path: {{ $appset.path }}
+          # If Helm chart is remote, use chart: <addon-name> (from Helm repository)
+          {{- else }}
+          chart: {{ $appset.chart }}
+          {{- end }}
+          helm:
+            ignoreMissingValueFiles: true # Ignore missing values files - not every cluster needs custom values
+            skipSchemaValidation: true  # Skip strict schema validation for the addon values
+            # The following values are injecting the cluster-specific addon values from the /configuration/addons-clusters-values/<cluster-name>.yaml values file
+            values: |
+              {{`{{- $addonKey := index . "`}}{{ $appset.appName }}{{`" -}}`}}
+              {{`{{- if $addonKey -}}`}}
+              {{`{{ $addonKey | toYaml }}`}}
+              {{`{{- end -}}`}}
+            {{- if eq $appset.appName "datadog" }}
+            # Inject Datadog dd_tags and apiKeyExistingSecret via helper function
+            {{- include "datadog.parameters" . | nindent 12 }}
+            {{- end }}
+            {{- if eq $appset.appName "external-secrets" }}
+            # Inject cloud-provider-specific service account annotation via helper function
+            {{- include "eso.valuesObject" $ | nindent 12 }}
+            {{- end }}
+            valueFiles:
+            # global values file
+            - '$values/configuration/addons-global-values/{{ $appset.appName }}.yaml'
+            # If eksAutoMode is "true", load EKS Auto Mode overrides (tolerations, etc.)
+            - '{{`{{if eq (index .metadata.labels "eksAutoMode") "true"}}$values/configuration/addons-global-values/nodepools-config-values/`}}{{ $appset.appName }}{{`-nodepool-config.yaml{{else}}$values/configuration/.skip/no-karpenter-overrides{{end}}`}}'
+        {{- if eq $appset.appName "external-secrets" }}
+        # Source 2: ESO configuration (ClusterSecretStore)
+        - repoURL: {{ $.Values.repoURL }}
+          targetRevision: {{ $.Values.targetRevision }}
+          path: charts/eso-configuration
+          helm:
+            valuesObject:
+              cloudProvider: {{ $.Values.bootstrap.cloudProvider | default "aws" }}
+              secretManagerRegion: '{{`{{.metadata.annotations.region}}`}}'
+              esoNamespace: external-secrets
+              esoServiceAccount: external-secrets
+              {{- if eq ($.Values.bootstrap.cloudProvider | default "aws") "gcp" }}
+              gcpProjectID: '{{`{{index .metadata.annotations "gcpProjectId"}}`}}'
+              gkeClusterName: '{{`{{.name}}`}}'
+              {{- end }}
+        {{- end }}
+        {{- if eq $appset.appName "datadog" }}
+        # Source 2: Datadog API key ExternalSecret
+        - repoURL: {{ $.Values.repoURL }}
+          targetRevision: {{ $.Values.targetRevision }}
+          path: charts/datadog-apikey
+          helm:
+            valueFiles:
+            - '$values/configuration/addons-clusters-values/{{`{{.name}}`}}.yaml'
+            ignoreMissingValueFiles: true
+        {{- end }}
+        # Values reference
+        - repoURL: {{ $.Values.repoURL }}
+          targetRevision: {{ $.Values.targetRevision }}
+          ref: values
+      destination:
+        # If deploying to the host cluster (ArgoCD management cluster) use in-cluster, otherwise use the cluster name for remote deployment
+        name: '{{`{{- if eq .name "`}}{{ $.Values.hostCluster.name }}{{`" }}in-cluster{{- else }}{{.name}}{{- end }}`}}'
+        namespace: {{ $appset.namespace | default $appset.appName }}
+      syncPolicy:
+        automated:
+          prune: true
+        syncOptions:
+        - CreateNamespace=true
+        {{ if eq $appset.appName "kyverno" }}
+        - ServerSideApply=true
+        {{ end }}
+      {{- if or (eq $appset.appName "datadog") $appset.ignoreDifferences $appset.inMigration }}
+      ignoreDifferences:
+      {{- if eq $appset.appName "datadog" }}
+      {{- include "datadog.ignoreDifferencesItems" . | nindent 8 }}
+      {{- end }}
+      {{- if $appset.ignoreDifferences }}
+      {{- toYaml $appset.ignoreDifferences | nindent 8 }}
+      {{- end }}
+      {{- if and $appset.inMigration $.Values.migrationIgnoreDifferences }}
+      {{- toYaml $.Values.migrationIgnoreDifferences | nindent 8 }}
+      {{- end }}
+      {{- end }}
+---
+{{- end }}

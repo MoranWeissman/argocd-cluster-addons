@@ -1,0 +1,16 @@
+# =================================================================================== #
+# ArgoCD Management Cluster (Host)
+# =================================================================================== #
+clusterGlobalValues:
+  env: &env dev
+  clusterName: &clusterName argocd-management-cluster
+  region: &region eu-west-1
+  projectName: devops
+  accountId: 111111111111
+
+# ================================================================ #
+# ------------------- Datadog Configuration ------------------- #
+# ================================================================ #
+datadog:
+  datadog:
+    clusterName: *clusterName

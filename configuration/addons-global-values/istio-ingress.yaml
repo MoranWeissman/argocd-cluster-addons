@@ -1,0 +1,14 @@
+# Istio Ingress Gateway
+# Deployed at sync-wave 2 (after istiod)
+service:
+  type: LoadBalancer
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi

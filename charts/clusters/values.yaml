@@ -1,2 +1,1 @@
-clusters: []
-external_secrets_sa_role: ""
+# Cluster list is provided via configuration/cluster-addons.yaml

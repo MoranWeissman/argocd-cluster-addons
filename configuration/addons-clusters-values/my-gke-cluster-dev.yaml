@@ -1,0 +1,51 @@
+# =================================================================================== #
+# GKE Cluster Example
+# =================================================================================== #
+# This is an example cluster values file for a GKE (Google Kubernetes Engine) cluster.
+# The same structure applies as for EKS clusters, but IAM annotations differ.
+#
+# GKE uses Workload Identity instead of IRSA:
+#   AWS:  eks.amazonaws.com/role-arn: "arn:aws:iam::..."
+#   GCP:  iam.gke.io/gcp-service-account: "sa-name@project.iam.gserviceaccount.com"
+# =================================================================================== #
+clusterGlobalValues:
+  env: &env dev
+  clusterName: &clusterName my-gke-cluster-dev
+  region: &region us-central1
+  projectName: my-app
+  # GCP project ID (used by ESO for secret access)
+  gcpProjectId: my-gcp-project-123
+
+# ================================================================ #
+# ------------------- KEDA Configuration ------------------- #
+# ================================================================ #
+keda:
+  serviceAccount:
+    operator:
+      annotations:
+        iam.gke.io/gcp-service-account: keda-my-gke-cluster-dev@my-gcp-project-123.iam.gserviceaccount.com
+  operator:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 1000Mi
+
+# ================================================================ #
+# ------------------- External Secrets Configuration ------------------- #
+# ================================================================ #
+# Note: ESO service account annotation is injected automatically
+# by the eso.valuesObject helper using Workload Identity convention.
+# Override here only if you need a non-standard service account.
+
+# ================================================================ #
+# ------------------- Cert Manager Configuration ------------------- #
+# ================================================================ #
+cert-manager:
+  serviceAccount:
+    annotations:
+      iam.gke.io/gcp-service-account: cert-manager-my-gke-cluster-dev@my-gcp-project-123.iam.gserviceaccount.com
+  dns01RecursiveNameservers: "8.8.8.8:53,1.1.1.1:53"
+  dns01RecursiveNameserversOnly: true
